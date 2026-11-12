@@ -87,15 +87,25 @@ function setTable<T>(key: string, data: T): void {
 // ----------------------------------------------------------------------------
 // DB INITIALIZATION & SEEDING
 // ----------------------------------------------------------------------------
+const DB_VERSION_KEY = 'syllabussync_db_version';
+const CURRENT_VERSION = 'v2_real_users_zero_progress';
+
 export function initializeLocalDatabase(): void {
   if (typeof localStorage === 'undefined') return;
+
+  const currentVersion = localStorage.getItem(DB_VERSION_KEY);
+  if (currentVersion !== CURRENT_VERSION) {
+    // Purge old cached test users and old seeded progress
+    Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(DB_VERSION_KEY, CURRENT_VERSION);
+  }
 
   const initialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
   if (initialized) return;
 
-  console.log('[SyllabusSync DB] Initializing local database tables and seed data...');
+  console.log('[SyllabusSync DB] Initializing clean database for real KTU students...');
 
-  // Default Profiles
+  // System Super-Admin account (0% progress, system coordinator)
   const initialProfiles: UserProfile[] = [
     {
       id: 'usr-superadmin',
@@ -111,196 +121,34 @@ export function initializeLocalDatabase(): void {
       role: 'super_admin',
       createdAt: '2024-01-01T00:00:00Z',
     },
-    {
-      id: 'usr-arif',
-      email: 'arif@ktu.edu',
-      username: 'arif_ktu',
-      displayName: 'Arif Mohammed',
-      avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150',
-      bio: 'B.Tech CSE S7 • Focused on AI & SIC high marks',
-      university: 'APJ Abdul Kalam Technological University (KTU)',
-      semester: 'S7',
-      collegeName: 'TKM College of Engineering, Kollam',
-      studyGoal: 'Finish all 15 modules and revise 3 times before university exams',
-      role: 'user',
-      createdAt: '2024-01-05T10:00:00Z',
-    },
-    {
-      id: 'usr-kailas',
-      email: 'kailas@ktu.edu',
-      username: 'kailas_s7',
-      displayName: 'Kailas Nath',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-      bio: 'S7 CSE • Aiming for 9+ CGPA',
-      university: 'APJ Abdul Kalam Technological University (KTU)',
-      semester: 'S7',
-      collegeName: 'Govt Model Engineering College, Thrikkakara',
-      studyGoal: 'Master A* search and Cryptography modes of operation',
-      role: 'user',
-      createdAt: '2024-01-08T12:00:00Z',
-    },
-    {
-      id: 'usr-lini',
-      email: 'lini@ktu.edu',
-      username: 'lini_s7',
-      displayName: 'Lini Kurian',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-      bio: 'S7 CSE • Biomedical Instrumentation enthusiast',
-      university: 'APJ Abdul Kalam Technological University (KTU)',
-      semester: 'S7',
-      collegeName: 'Mar Athanasius College of Engineering, Kothamangalam',
-      studyGoal: 'Complete BMI lead systems and pacemakers',
-      role: 'user',
-      createdAt: '2024-01-10T14:00:00Z',
-    },
   ];
 
-  // User Settings
-  const initialSettings: Record<string, UserSettings> = {};
-  initialProfiles.forEach((p) => {
-    initialSettings[p.id] = {
-      userId: p.id,
+  // User Settings (Initial)
+  const initialSettings: Record<string, UserSettings> = {
+    'usr-superadmin': {
+      userId: 'usr-superadmin',
       theme: 'system',
       progressVisibility: 'friends',
       emailNotifications: true,
       studyReminders: true,
       dailyGoalMinutes: 180,
-    };
-  });
-
-  // Calculate real progress for demo friends (Arif, Kailas, Lini) based on actual leaf topics
-  // Get all leaf topics
-  const allLeafTopicIds: { subjectId: string; topicId: string }[] = [];
-  officialSyllabus.subjects.forEach((s) => {
-    s.modules.forEach((m) => {
-      m.topics.forEach((t) => {
-        if (t.subtopics && t.subtopics.length > 0) {
-          t.subtopics.forEach((st) => {
-            allLeafTopicIds.push({ subjectId: s.id, topicId: st.id });
-          });
-        } else {
-          allLeafTopicIds.push({ subjectId: s.id, topicId: t.id });
-        }
-      });
-    });
-  });
-
-  const initialProgress: UserTopicProgress[] = [];
-
-  // Seed realistic topic checkboxes for demo friends to match the prompt example (Arif AI ~72%, Kailas ~84%, Lini ~62%)
-  const seedFriendProgress = (userId: string, aiRatio: number, bmiRatio: number, sicRatio: number) => {
-    allLeafTopicIds.forEach((item, index) => {
-      let threshold = 0.5;
-      if (item.subjectId === 'sub-cst401-ai') threshold = aiRatio;
-      if (item.subjectId === 'sub-ect425-bmi') threshold = bmiRatio;
-      if (item.subjectId === 'sub-cst433-sic') threshold = sicRatio;
-
-      // Deterministic check pattern based on index
-      const isCompleted = ((index * 17 + 7) % 100) / 100 < threshold;
-      if (isCompleted) {
-        initialProgress.push({
-          id: `prog-${userId}-${item.topicId}`,
-          userId,
-          topicId: item.topicId,
-          isCompleted: true,
-          completedAt: new Date(Date.now() - (index % 14) * 86400000).toISOString(),
-          revisionState: index % 3 === 0 ? 'revised' : 'studied',
-          confidenceLevel: 3 + (index % 3),
-          revisionCount: (index % 3) + 1,
-          lastRevisedAt: new Date().toISOString(),
-          nextRevisionAt: new Date(Date.now() + 3 * 86400000).toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      }
-    });
+    },
   };
 
-  seedFriendProgress('usr-arif', 0.72, 0.54, 0.81);
-  seedFriendProgress('usr-kailas', 0.84, 0.69, 0.75);
-  seedFriendProgress('usr-lini', 0.62, 0.80, 0.91);
+  // Strictly ZERO seeded progress - all users start with 0% and gradually increase as they check topics
+  const initialProgress: UserTopicProgress[] = [];
 
-  // Friendships: Connect demo friends to each other and ready to connect to any newly registered user
-  const initialFriendships: Friendship[] = [
-    { id: 'f-1', userId: 'usr-arif', friendId: 'usr-kailas', status: 'accepted', createdAt: '2024-01-10T00:00:00Z' },
-    { id: 'f-2', userId: 'usr-kailas', friendId: 'usr-arif', status: 'accepted', createdAt: '2024-01-10T00:00:00Z' },
-    { id: 'f-3', userId: 'usr-arif', friendId: 'usr-lini', status: 'accepted', createdAt: '2024-01-12T00:00:00Z' },
-    { id: 'f-4', userId: 'usr-lini', friendId: 'usr-arif', status: 'accepted', createdAt: '2024-01-12T00:00:00Z' },
-  ];
+  // Zero mock friendships
+  const initialFriendships: Friendship[] = [];
 
-  // Study Groups
-  const initialGroups: StudyGroup[] = [
-    {
-      id: 'grp-ktu-s7-cse',
-      name: 'KTU S7 CSE Exam Preparation',
-      description: 'Collaborative revision group for AI, Biomedical Instrumentation, and Security in Computing.',
-      ownerId: 'usr-arif',
-      inviteCode: 'KTUS7CSE',
-      isPrivate: false,
-      memberCount: 3,
-      createdAt: '2024-01-15T10:00:00Z',
-    },
-    {
-      id: 'grp-pyq-crushers',
-      name: 'KTU S7 14-Mark Question Solvers',
-      description: 'Focusing on repeated algorithms, numerical problems, and high-priority KTU examination diagrams.',
-      ownerId: 'usr-kailas',
-      inviteCode: 'PYQCRUSH',
-      isPrivate: false,
-      memberCount: 3,
-      createdAt: '2024-01-20T12:00:00Z',
-    },
-  ];
+  // Zero mock groups
+  const initialGroups: StudyGroup[] = [];
+  const initialGroupMembers: GroupMember[] = [];
 
-  const initialGroupMembers: GroupMember[] = [
-    { id: 'gm-1', groupId: 'grp-ktu-s7-cse', userId: 'usr-arif', role: 'owner', joinedAt: '2024-01-15T10:00:00Z' },
-    { id: 'gm-2', groupId: 'grp-ktu-s7-cse', userId: 'usr-kailas', role: 'member', joinedAt: '2024-01-15T11:00:00Z' },
-    { id: 'gm-3', groupId: 'grp-ktu-s7-cse', userId: 'usr-lini', role: 'member', joinedAt: '2024-01-15T12:00:00Z' },
-    { id: 'gm-4', groupId: 'grp-pyq-crushers', userId: 'usr-kailas', role: 'owner', joinedAt: '2024-01-20T12:00:00Z' },
-    { id: 'gm-5', groupId: 'grp-pyq-crushers', userId: 'usr-arif', role: 'moderator', joinedAt: '2024-01-20T13:00:00Z' },
-    { id: 'gm-6', groupId: 'grp-pyq-crushers', userId: 'usr-lini', role: 'member', joinedAt: '2024-01-20T14:00:00Z' },
-  ];
+  // Zero mock tasks
+  const initialTasks: StudyTask[] = [];
 
-  // Default Study Tasks
-  const initialTasks: StudyTask[] = [
-    {
-      id: 'task-1',
-      userId: 'usr-arif',
-      subjectId: 'sub-cst401-ai',
-      topicId: 'cst401-m2-t7',
-      title: 'Practice A* admissibility and consistency proofs',
-      notes: 'Refer to Russell & Norvig chapter 3.5; solve 2022 Dec university question',
-      targetDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      priority: 'high',
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'task-2',
-      userId: 'usr-arif',
-      subjectId: 'sub-cst433-sic',
-      topicId: 'cst433-m2-t7',
-      title: 'Revise AES SubBytes and MixColumns GF(2^8) arithmetic',
-      notes: 'Important 14-mark question in Part B',
-      targetDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
-      priority: 'urgent',
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'task-3',
-      userId: 'usr-arif',
-      subjectId: 'sub-ect425-bmi',
-      topicId: 'ect425-m2-t15',
-      title: 'Draw ECG machine block diagram with DRL circuit',
-      notes: 'Guaranteed 14-mark diagram question from Module 2',
-      targetDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
-      priority: 'high',
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  // Audit Logs
+  // System Audit Logs
   const initialAuditLogs: AuditLog[] = [
     {
       id: 'log-1',
@@ -309,8 +157,8 @@ export function initializeLocalDatabase(): void {
       action: 'SYSTEM_INITIALIZED',
       entityType: 'SYSTEM',
       entityId: 'all',
-      details: { version: '1.0.0', scheme: 'KTU 2019 Scheme S7', subjects: ['CST401', 'ECT425', 'CST433'] },
-      createdAt: '2024-01-01T00:00:00Z',
+      details: { version: '2.0.0', scheme: 'KTU 2019 Scheme S7', subjects: ['CST401', 'ECT425', 'CST433'] },
+      createdAt: new Date().toISOString(),
     },
     {
       id: 'log-2',
@@ -320,7 +168,7 @@ export function initializeLocalDatabase(): void {
       entityType: 'SYLLABUS',
       entityId: 'official-ktu-2019-s7',
       details: { moduleCount: 15, verifiedAgainst: 'KTU Official S7 Syllabus PDF' },
-      createdAt: '2024-01-02T10:00:00Z',
+      createdAt: new Date().toISOString(),
     },
   ];
 
@@ -340,12 +188,11 @@ export function initializeLocalDatabase(): void {
   setTable(STORAGE_KEYS.PYQ_QUESTIONS, (officialPYQs as any).questions);
   setTable(STORAGE_KEYS.INITIALIZED, 'true');
 
-  // Default active session: Arif or Super Admin
   if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID)) {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, 'usr-arif');
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, 'usr-superadmin');
   }
 
-  console.log('[SyllabusSync DB] Local database initialized successfully.');
+  console.log('[SyllabusSync DB] Local database initialized cleanly with 0% progress.');
 }
 
 // ----------------------------------------------------------------------------
@@ -531,9 +378,14 @@ export function calculateExamReadiness(userId: string): {
 // LOCAL DATABASE API METHODS
 // ----------------------------------------------------------------------------
 export const localDb = {
+  initializeLocalDatabase,
+
   // --- AUTH & PROFILES ---
   getCurrentUserId(): string {
-    return localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID) || 'usr-arif';
+    const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    if (stored) return stored;
+    const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
+    return profiles[0]?.id || 'usr-superadmin';
   },
 
   setCurrentUserId(id: string): void {
@@ -1124,7 +976,8 @@ export const localDb = {
 
     // If active user deleted self, reset session
     if (isSelf) {
-      this.setCurrentUserId('usr-arif');
+      const remaining = this.getAllUsers();
+      this.setCurrentUserId(remaining[0]?.id || 'usr-superadmin');
     }
   },
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -13,14 +13,28 @@ import {
   Bell,
   Search,
   Sparkles,
+  Database,
+  Cloud,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { getSupabaseConfig } from '../../services/supabase';
+import { SupabaseConfigModal } from '../database/SupabaseConfigModal';
 
 export const Navbar: React.FC = () => {
   const { user, theme, setTheme, allUsers, switchUser, logout } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
+  const [supabaseConfig, setSupabaseConfig] = useState(getSupabaseConfig());
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleConfigChange = () => {
+      setSupabaseConfig(getSupabaseConfig());
+    };
+    window.addEventListener('syllabussync_supabase_changed', handleConfigChange);
+    return () => window.removeEventListener('syllabussync_supabase_changed', handleConfigChange);
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
@@ -73,6 +87,27 @@ export const Navbar: React.FC = () => {
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
           </Link>
 
+          {/* Cloud Database Integration Trigger */}
+          <button
+            onClick={() => setSupabaseModalOpen(true)}
+            title={supabaseConfig.isConfigured ? 'Supabase Cloud Connected' : 'Connect Supabase Cloud Database'}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+              supabaseConfig.isConfigured
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">
+              {supabaseConfig.isConfigured ? 'Cloud DB' : 'Connect DB'}
+            </span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                supabaseConfig.isConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            />
+          </button>
+
           {/* Theme Toggle */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -118,10 +153,10 @@ export const Navbar: React.FC = () => {
               >
                 <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800">
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Instant Profile Switcher
+                    Registered Accounts
                   </p>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Test independent student checkboxes & admin tools:
+                    Active student profiles:
                   </p>
                 </div>
 
@@ -187,6 +222,12 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Supabase Cloud Connection Modal */}
+      <SupabaseConfigModal
+        isOpen={supabaseModalOpen}
+        onClose={() => setSupabaseModalOpen(false)}
+      />
     </header>
   );
 };

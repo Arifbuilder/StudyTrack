@@ -26,7 +26,9 @@ import {
 const syllabusData = rawSyllabus as unknown as SyllabusData;
 
 export const api = {
-  isCloudConnected: isSupabaseConfigured,
+  get isCloudConnected(): boolean {
+    return isSupabaseConfigured;
+  },
 
   // --- AUTH & PROFILES ---
   auth: {
@@ -90,7 +92,7 @@ export const api = {
       if (isSupabaseConfigured && supabase) {
         await supabase.auth.signOut();
       }
-      localDb.setCurrentUserId('usr-arif');
+      localDb.setCurrentUserId('usr-superadmin');
     },
 
     async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {

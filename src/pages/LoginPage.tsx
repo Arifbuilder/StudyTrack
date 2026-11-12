@@ -54,7 +54,7 @@ export const LoginPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Username or Email"
-                placeholder="e.g. arif_ktu or arif@ktu.edu"
+                placeholder="e.g. your_username or student@ktu.edu"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 icon={<Mail className="w-4 h-4" />}
@@ -78,32 +78,34 @@ export const LoginPage: React.FC = () => {
               </Button>
             </form>
 
-            {/* Quick Demo Switcher */}
-            <div className="pt-5 mt-5 border-t border-slate-100 dark:border-slate-800 space-y-2">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-center">
-                One-Click Quick Sign In
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {allUsers.slice(0, 4).map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      switchUser(u.id);
-                      navigate('/dashboard');
-                    }}
-                    className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 bg-slate-50 dark:bg-slate-800/60 text-left transition-colors flex items-center gap-2"
-                  >
-                    <img src={u.avatarUrl} alt={u.displayName} className="w-6 h-6 rounded-full" />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-900 dark:text-white truncate text-[11px]">
-                        {u.displayName.split(' ')[0]}
-                      </p>
-                      <p className="text-[10px] text-slate-400 truncate">@{u.username}</p>
-                    </div>
-                  </button>
-                ))}
+            {/* Existing Profiles */}
+            {allUsers.length > 0 && (
+              <div className="pt-5 mt-5 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-center">
+                  Existing Accounts on This Device
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {allUsers.slice(0, 4).map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => {
+                        switchUser(u.id);
+                        navigate('/dashboard');
+                      }}
+                      className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 bg-slate-50 dark:bg-slate-800/60 text-left transition-colors flex items-center gap-2"
+                    >
+                      <img src={u.avatarUrl} alt={u.displayName} className="w-6 h-6 rounded-full" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900 dark:text-white truncate text-[11px]">
+                          {u.displayName.split(' ')[0]}
+                        </p>
+                        <p className="text-[10px] text-slate-400 truncate">@{u.username}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="text-center pt-4 text-xs text-slate-500">
               Don't have an account?{' '}

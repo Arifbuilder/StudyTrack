@@ -11,15 +11,20 @@ import {
   Check,
   Shield,
   Save,
+  Database,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { Badge } from '../components/ui/Badge';
 import { api } from '../services/api';
+import { isSupabaseConfigured } from '../services/supabase';
+import { SupabaseConfigModal } from '../components/database/SupabaseConfigModal';
 import { ProgressVisibility } from '../types';
 
 export const SettingsPage: React.FC = () => {
   const { user, settings, theme, setTheme, refreshUser } = useAuth();
+  const [dbModalOpen, setDbModalOpen] = useState(false);
 
   const [visibility, setVisibility] = useState<ProgressVisibility>(
     settings?.progressVisibility || 'friends'
@@ -180,6 +185,47 @@ export const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Cloud Database Integration Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Database className="w-4 h-4 text-emerald-500" />
+              Supabase Cloud Database & API
+            </CardTitle>
+            <Badge variant={isSupabaseConfigured ? 'success' : 'warning'} size="sm">
+              {isSupabaseConfigured ? 'Cloud Connected' : 'Local Storage Mode'}
+            </Badge>
+          </div>
+          <CardDescription>
+            Connect to Supabase PostgreSQL for cloud sync across all your devices and classmates.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                {isSupabaseConfigured
+                  ? 'Active Cloud Connection: Realtime Postgres & RLS Enabled'
+                  : 'Currently operating in Local Relational Mode (offline)'}
+              </p>
+              <p className="text-[11px] text-slate-500 max-w-md leading-relaxed">
+                Provide your Supabase Project URL and Public Anon API Key to enable cross-device cloud persistence.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDbModalOpen(true)}
+              className="shrink-0"
+            >
+              <Database className="w-3.5 h-3.5 mr-1.5" />
+              Configure Database
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Danger Zone: Account Self-Deletion */}
       <Card className="border-rose-200 dark:border-rose-950/80 bg-rose-50/20 dark:bg-rose-950/10">
         <CardHeader>
@@ -235,6 +281,12 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Supabase Cloud Connection Modal */}
+      <SupabaseConfigModal
+        isOpen={dbModalOpen}
+        onClose={() => setDbModalOpen(false)}
+      />
     </div>
   );
 };

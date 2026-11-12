@@ -157,6 +157,10 @@ describe('SyllabusSync Acceptance & Scenario Verification', () => {
     const superAdmin = localDb.getAllUsers().find((u) => u.role === 'super_admin');
     expect(superAdmin).toBeDefined();
 
+    // Register real users to test deletion
+    localDb.registerUser({ email: 'stu1@ktu.edu', username: 'student_1', displayName: 'Student 1' });
+    localDb.registerUser({ email: 'stu2@ktu.edu', username: 'student_2', displayName: 'Student 2' });
+
     // Mass deletion fails if confirmation phrase is wrong
     expect(() => {
       localDb.deleteAllUsersSafely(superAdmin!.id, 'wrong phrase');
