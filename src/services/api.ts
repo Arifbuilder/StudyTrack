@@ -65,20 +65,27 @@ export const api = {
             .limit(1)
             .single();
           if (data) {
+            let pwHash = data.password_hash;
+            let userBio = data.bio;
+            if (!pwHash && userBio && userBio.startsWith('__hash:')) {
+              pwHash = userBio.replace('__hash:', '');
+              userBio = '';
+            }
+
             user = {
               id: data.id,
               email: data.email || '',
               username: data.username,
               displayName: data.display_name,
               avatarUrl: data.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${data.username}`,
-              bio: data.bio,
+              bio: userBio,
               university: data.university,
               semester: data.semester,
               collegeName: data.college_name,
               studyGoal: data.study_goal,
               role: data.role || 'user',
               createdAt: data.created_at,
-              passwordHash: data.password_hash,
+              passwordHash: pwHash,
             };
             localDb.syncProfileFromCloud(user);
           }
@@ -134,7 +141,7 @@ export const api = {
           }
 
           // Always upsert to public.profiles table so all devices see this student
-          await supabase.from('profiles').upsert({
+          const profilePayload: any = {
             id: localUser.id,
             email: localUser.email,
             username: localUser.username,
@@ -145,10 +152,26 @@ export const api = {
             college_name: localUser.collegeName,
             study_goal: localUser.studyGoal,
             role: localUser.role,
-            password_hash: passwordHash,
             created_at: localUser.createdAt,
             updated_at: new Date().toISOString(),
-          });
+          };
+
+          if (passwordHash) {
+            profilePayload.password_hash = passwordHash;
+          }
+
+          let res = await supabase.from('profiles').upsert(profilePayload);
+          if (res.error && res.error.code === 'PGRST204') {
+            // Column password_hash not in schema cache, fallback to storing in bio
+            delete profilePayload.password_hash;
+            if (passwordHash) {
+              profilePayload.bio = `__hash:${passwordHash}`;
+            }
+            res = await supabase.from('profiles').upsert(profilePayload);
+          }
+          if (res.error) {
+            console.error('[Supabase Register Error]', res.error);
+          }
         } catch (e) {
           console.warn('[Supabase Register Fallback]', e);
         }
@@ -437,29 +460,40 @@ export const api = {
     async getAllUsers(): Promise<UserProfile[]> {
       if (isSupabaseConfigured && supabase) {
         try {
-          const { data, error } = await supabase.from('profiles').select('*');
-          if (!error && data && data.length > 0) {
-            const mapped: UserProfile[] = data.map((d: any) => ({
-              id: d.id,
-              email: d.email || '',
-              username: d.username,
-              displayName: d.display_name,
-              avatarUrl: d.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.username}`,
-              bio: d.bio,
-              university: d.university || 'APJ Abdul Kalam Technological University (KTU)',
-              semester: d.semester || 'S7',
-              collegeName: d.college_name,
-              studyGoal: d.study_goal,
-              role: d.role || 'user',
-              createdAt: d.created_at || new Date().toISOString(),
-              passwordHash: d.password_hash,
-            }));
-            mapped.forEach((u) => {
-              try {
-                localDb.syncProfileFromCloud(u);
-              } catch (e) {}
+          const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: true });
+          if (!error && data) {
+            const mapped: UserProfile[] = data.map((d: any) => {
+              let pwHash = d.password_hash;
+              let userBio = d.bio;
+              if (!pwHash && userBio && userBio.startsWith('__hash:')) {
+                pwHash = userBio.replace('__hash:', '');
+                userBio = '';
+              }
+              return {
+                id: d.id,
+                email: d.email || '',
+                username: d.username,
+                displayName: d.display_name,
+                avatarUrl: d.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.username}`,
+                bio: userBio,
+                university: d.university || 'APJ Abdul Kalam Technological University (KTU)',
+                semester: d.semester || 'S7',
+                collegeName: d.college_name,
+                studyGoal: d.study_goal,
+                role: d.role || 'user',
+                createdAt: d.created_at || new Date().toISOString(),
+                passwordHash: pwHash,
+              };
             });
-            return localDb.getAllUsers();
+
+            // If empty, ensure super admin is present
+            if (mapped.length === 0) {
+              const defaultAdmin = localDb.getAllUsers().find((u) => u.role === 'super_admin');
+              if (defaultAdmin) mapped.push(defaultAdmin);
+            }
+
+            localDb.setAllProfiles(mapped);
+            return mapped;
           }
         } catch (e) {
           console.warn('[Supabase getAllUsers Fallback]', e);
@@ -469,15 +503,67 @@ export const api = {
     },
 
     async deleteUser(targetUserId: string, actorId: string): Promise<void> {
+      // 1. Delete from local database (profiles, progress, tasks, notes, etc.)
       localDb.deleteUserAccount(targetUserId, actorId);
+
+      // 2. Delete from Supabase cloud database
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('user_topic_progress').delete().eq('user_id', targetUserId);
+          await supabase.from('user_settings').delete().eq('user_id', targetUserId);
+          await supabase.from('study_tasks').delete().eq('user_id', targetUserId);
+          await supabase.from('custom_topics').delete().eq('user_id', targetUserId);
+          const { error } = await supabase.from('profiles').delete().eq('id', targetUserId);
+          if (error) {
+            console.error('[Supabase deleteUser error]', error);
+          }
+        } catch (err) {
+          console.warn('[Supabase deleteUser fallback]', err);
+        }
+      }
     },
 
     async bulkDeleteUsers(targetUserIds: string[], actorId: string): Promise<number> {
-      return localDb.bulkDeleteUsers(targetUserIds, actorId);
+      const count = localDb.bulkDeleteUsers(targetUserIds, actorId);
+
+      if (isSupabaseConfigured && supabase && targetUserIds.length > 0) {
+        try {
+          await supabase.from('user_topic_progress').delete().in('user_id', targetUserIds);
+          await supabase.from('user_settings').delete().in('user_id', targetUserIds);
+          await supabase.from('study_tasks').delete().in('user_id', targetUserIds);
+          await supabase.from('custom_topics').delete().in('user_id', targetUserIds);
+          const { error } = await supabase.from('profiles').delete().in('id', targetUserIds);
+          if (error) {
+            console.error('[Supabase bulkDeleteUsers error]', error);
+          }
+        } catch (err) {
+          console.warn('[Supabase bulkDeleteUsers fallback]', err);
+        }
+      }
+
+      return count;
     },
 
     async deleteAllUsers(actorId: string, confirmationPhrase: string): Promise<number> {
-      return localDb.deleteAllUsersSafely(actorId, confirmationPhrase);
+      const count = localDb.deleteAllUsersSafely(actorId, confirmationPhrase);
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          // Delete all records except the Super-Admin
+          await supabase.from('user_topic_progress').delete().neq('user_id', actorId);
+          await supabase.from('user_settings').delete().neq('user_id', actorId);
+          await supabase.from('study_tasks').delete().neq('user_id', actorId);
+          await supabase.from('custom_topics').delete().neq('user_id', actorId);
+          const { error } = await supabase.from('profiles').delete().neq('id', actorId);
+          if (error) {
+            console.error('[Supabase deleteAllUsers error]', error);
+          }
+        } catch (err) {
+          console.warn('[Supabase deleteAllUsers fallback]', err);
+        }
+      }
+
+      return count;
     },
 
     getAuditLogs(): AuditLog[] {

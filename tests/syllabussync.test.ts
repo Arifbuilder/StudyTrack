@@ -269,4 +269,30 @@ describe('SyllabusSync Acceptance & Scenario Verification', () => {
     const calculated = calculateUserProgress(student.id);
     expect(calculated.completedLeafCount).toBe(1);
   });
+
+  it('Scenario 19: Administrator account deletion permanently purges user from database', async () => {
+    // 1. Create a user
+    const rand = Date.now();
+    const toDelete = await api.auth.register({
+      email: `del_${rand}@ktu.edu`,
+      username: `student_del_${rand}`,
+      displayName: 'Delete Me Student',
+      password: 'password123',
+      role: 'user',
+    });
+
+    const beforeUsers = await api.admin.getAllUsers();
+    expect(beforeUsers.some((u) => u.id === toDelete.id)).toBe(true);
+
+    // 2. Admin deletes the user
+    await api.admin.deleteUser(toDelete.id, 'usr-superadmin');
+
+    // 3. User is permanently gone and getAllUsers does NOT resurrect it
+    const afterUsers = await api.admin.getAllUsers();
+    expect(afterUsers.some((u) => u.id === toDelete.id)).toBe(false);
+
+    // 4. Any topic progress for this user is also purged
+    const progress = await api.progress.getUserProgress(toDelete.id);
+    expect(progress).toHaveLength(0);
+  });
 });

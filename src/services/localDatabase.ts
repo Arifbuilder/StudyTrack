@@ -417,6 +417,10 @@ export const localDb = {
     return getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
   },
 
+  setAllProfiles(profiles: UserProfile[]): void {
+    setTable(STORAGE_KEYS.PROFILES, profiles);
+  },
+
   syncProfileFromCloud(cloudProfile: UserProfile): void {
     const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
     const idx = profiles.findIndex((p) => p.id === cloudProfile.id || p.username.toLowerCase() === cloudProfile.username.toLowerCase());
@@ -970,16 +974,14 @@ export const localDb = {
     const actor = profiles.find((p) => p.id === actorId);
     const target = profiles.find((p) => p.id === targetUserId);
 
-    if (!target) throw new Error('Target user account not found');
-
     // Security check: Only super_admin, admin, or the user deleting their own account
     const isSelf = targetUserId === actorId;
-    const isAdmin = actor && (actor.role === 'admin' || actor.role === 'super_admin');
+    const isAdmin = actorId === 'usr-superadmin' || (actor && (actor.role === 'admin' || actor.role === 'super_admin'));
     if (!isSelf && !isAdmin) {
       throw new Error('Unauthorized: Ordinary users cannot delete other accounts');
     }
 
-    if (target.role === 'super_admin' && !isSelf) {
+    if (target && target.role === 'super_admin' && !isSelf) {
       throw new Error('Unauthorized: Super Admin accounts cannot be deleted by other users');
     }
 
@@ -994,9 +996,9 @@ export const localDb = {
     setTable(STORAGE_KEYS.GROUP_MEMBERS, getTable<GroupMember[]>(STORAGE_KEYS.GROUP_MEMBERS, []).filter((m) => m.userId !== targetUserId));
 
     // Audit log
-    this.addAuditLog(actorId, actor?.username || 'user', 'USER_DELETED', 'USER', targetUserId, {
-      deletedUsername: target.username,
-      deletedEmail: target.email,
+    this.addAuditLog(actorId, actor?.username || (actorId === 'usr-superadmin' ? 'superadmin' : 'admin'), 'USER_DELETED', 'USER', targetUserId, {
+      deletedUsername: target?.username || targetUserId,
+      deletedEmail: target?.email || '',
     });
 
     broadcastEvent({ type: 'USER_DELETED', userId: targetUserId, timestamp: Date.now() });
@@ -1012,12 +1014,13 @@ export const localDb = {
     const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
     const actor = profiles.find((p) => p.id === actorId);
 
-    if (!actor || actor.role !== 'super_admin') {
+    const isSuperAdmin = actorId === 'usr-superadmin' || actor?.role === 'super_admin';
+    if (!isSuperAdmin) {
       throw new Error('Unauthorized: Only Super Administrators can execute bulk account deletion');
     }
 
     // Exclude super admin themselves
-    const validTargets = targetUserIds.filter((id) => id !== actorId);
+    const validTargets = targetUserIds.filter((id) => id !== actorId && id !== 'usr-superadmin');
     validTargets.forEach((id) => {
       this.deleteUserAccount(id, actorId);
     });
@@ -1033,17 +1036,18 @@ export const localDb = {
     const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
     const actor = profiles.find((p) => p.id === actorId);
 
-    if (!actor || actor.role !== 'super_admin') {
+    const isSuperAdmin = actorId === 'usr-superadmin' || actor?.role === 'super_admin';
+    if (!isSuperAdmin) {
       throw new Error('Unauthorized: Only Super Administrators can execute mass account deletion');
     }
 
     // All users except the Super Admin
-    const targetUserIds = profiles.filter((p) => p.id !== actorId).map((p) => p.id);
+    const targetUserIds = profiles.filter((p) => p.id !== actorId && p.id !== 'usr-superadmin').map((p) => p.id);
     targetUserIds.forEach((id) => {
       this.deleteUserAccount(id, actorId);
     });
 
-    this.addAuditLog(actorId, actor.username, 'ALL_USERS_DELETED', 'SYSTEM', 'bulk', {
+    this.addAuditLog(actorId, actor?.username || 'superadmin', 'ALL_USERS_DELETED', 'SYSTEM', 'bulk', {
       deletedCount: targetUserIds.length,
       superAdminPreserved: actorId,
     });

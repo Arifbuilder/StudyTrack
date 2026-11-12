@@ -21,12 +21,15 @@ import { api } from '../services/api';
 import { UserProfile, AuditLog } from '../types';
 
 export const AdminPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+
+  // Deletion loading state
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Individual deletion modal
   const [singleDeleteUser, setSingleDeleteUser] = useState<UserProfile | null>(null);
@@ -91,34 +94,48 @@ export const AdminPage: React.FC = () => {
 
   const handleConfirmSingleDelete = async () => {
     if (!singleDeleteUser) return;
+    setIsDeleting(true);
     try {
-      await api.admin.deleteUser(singleDeleteUser.id, user.id);
+      const deletedId = singleDeleteUser.id;
+      await api.admin.deleteUser(deletedId, user.id);
+      setUsers((prev) => prev.filter((u) => u.id !== deletedId));
       setSingleDeleteUser(null);
       await loadData();
+      refreshUser();
     } catch (err: any) {
       alert(err.message || 'Failed to delete user');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleConfirmBulkDelete = async () => {
-    if (!isSuperAdmin) return;
+    if (!isSuperAdmin || selectedUserIds.size === 0) return;
+    setIsDeleting(true);
     try {
-      await api.admin.bulkDeleteUsers(Array.from(selectedUserIds), user.id);
+      const idsToDelete = Array.from(selectedUserIds);
+      await api.admin.bulkDeleteUsers(idsToDelete, user.id);
+      setUsers((prev) => prev.filter((u) => !selectedUserIds.has(u.id)));
       setSelectedUserIds(new Set());
       setBulkModalOpen(false);
       await loadData();
+      refreshUser();
     } catch (err: any) {
       alert(err.message || 'Bulk deletion failed');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleConfirmDeleteAll = async () => {
     if (!isSuperAdmin) return;
+    setIsDeleting(true);
     setDeleteError('');
     setDeleteSuccess('');
 
     try {
       const count = await api.admin.deleteAllUsers(user.id, confirmPhrase.trim());
+      setUsers((prev) => prev.filter((u) => u.id === user.id));
       setDeleteSuccess(`Successfully deleted ${count} student accounts. Super Admin preserved.`);
       setTimeout(() => {
         setDeleteAllModalOpen(false);
@@ -126,8 +143,11 @@ export const AdminPage: React.FC = () => {
         setDeleteSuccess('');
       }, 2000);
       await loadData();
+      refreshUser();
     } catch (err: any) {
       setDeleteError(err.message || 'Mass deletion failed.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -449,7 +469,7 @@ export const AdminPage: React.FC = () => {
             <Button variant="outline" size="sm" onClick={() => setSingleDeleteUser(null)}>
               Cancel
             </Button>
-            <Button variant="danger" size="sm" onClick={handleConfirmSingleDelete}>
+            <Button variant="danger" size="sm" loading={isDeleting} onClick={handleConfirmSingleDelete}>
               Permanently Delete Account
             </Button>
           </div>
@@ -477,7 +497,7 @@ export const AdminPage: React.FC = () => {
             <Button variant="outline" size="sm" onClick={() => setBulkModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="danger" size="sm" onClick={handleConfirmBulkDelete}>
+            <Button variant="danger" size="sm" loading={isDeleting} onClick={handleConfirmBulkDelete}>
               Delete {selectedUserIds.size} Accounts
             </Button>
           </div>
@@ -534,6 +554,7 @@ export const AdminPage: React.FC = () => {
             <Button
               variant="danger"
               size="sm"
+              loading={isDeleting}
               disabled={confirmPhrase.trim() !== 'DELETE ALL USERS PERMANENTLY'}
               onClick={handleConfirmDeleteAll}
               className="bg-rose-700 hover:bg-rose-800"
