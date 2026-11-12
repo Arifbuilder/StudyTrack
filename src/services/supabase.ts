@@ -52,7 +52,12 @@ export function getSupabaseConfig() {
   };
 }
 
-export async function testSupabaseConnection(url: string, anonKey: string): Promise<{ success: boolean; message: string; latencyMs?: number }> {
+export async function testSupabaseConnection(url: string, anonKey: string): Promise<{
+  success: boolean;
+  message: string;
+  latencyMs?: number;
+  tablesMissing?: boolean;
+}> {
   try {
     const trimmedUrl = url.trim();
     const trimmedKey = anonKey.trim();
@@ -73,7 +78,20 @@ export async function testSupabaseConnection(url: string, anonKey: string): Prom
     const { error } = await tempClient.from('subjects').select('count', { count: 'exact', head: true });
     const latency = Math.round(performance.now() - startTime);
 
-    if (error && error.code !== 'PGRST116' && !error.message.includes('relation "subjects" does not exist')) {
+    if (error) {
+      if (
+        error.message.includes('relation "subjects" does not exist') ||
+        error.message.includes('relation "public.subjects" does not exist') ||
+        error.code === '42P01' ||
+        error.code === 'PGRST205'
+      ) {
+        return {
+          success: true,
+          tablesMissing: true,
+          message: 'Connected to Supabase! But SQL tables are not created yet. Run the SQL schema migration in your Supabase SQL Editor.',
+          latencyMs: latency,
+        };
+      }
       if (error.message.includes('JWT') || error.message.includes('apiKey') || error.message.includes('Invalid API key')) {
         return { success: false, message: `Invalid Supabase API key: ${error.message}` };
       }
@@ -86,7 +104,7 @@ export async function testSupabaseConnection(url: string, anonKey: string): Prom
 
     return {
       success: true,
-      message: 'Supabase cloud connection verified successfully!',
+      message: 'Supabase cloud connection verified & tables are active!',
       latencyMs: latency,
     };
   } catch (err: any) {
