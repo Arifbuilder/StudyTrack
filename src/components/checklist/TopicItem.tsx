@@ -130,6 +130,7 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, subjectCode, module
       >
         {/* Parent Checkbox */}
         <button
+          type="button"
           onClick={handleParentCheckboxClick}
           className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center border transition-all duration-200 shrink-0 ${
             parentStatus === 'completed' || (!hasSubtopics && isLeafCompleted)
@@ -261,10 +262,15 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, subjectCode, module
               return (
                 <div
                   key={subtopic.id}
-                  className="py-2.5 pr-4 flex items-start gap-3 text-xs hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
+                  onClick={() => toggleTopic(subtopic.id, subCompleted)}
+                  className="py-2.5 pr-4 flex items-start gap-3 text-xs hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer select-none"
                 >
                   <button
-                    onClick={() => toggleTopic(subtopic.id, subCompleted)}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTopic(subtopic.id, subCompleted);
+                    }}
                     className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center border transition-all shrink-0 ${
                       subCompleted
                         ? 'bg-indigo-600 border-indigo-600 text-white'

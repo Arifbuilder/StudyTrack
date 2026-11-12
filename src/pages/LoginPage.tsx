@@ -88,6 +88,7 @@ export const LoginPage: React.FC = () => {
                   {allUsers.slice(0, 4).map((u) => (
                     <button
                       key={u.id}
+                      type="button"
                       onClick={() => {
                         switchUser(u.id);
                         navigate('/dashboard');

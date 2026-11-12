@@ -385,7 +385,9 @@ export const DashboardPage: React.FC = () => {
                                 <div className="flex items-start gap-2.5">
                                   {/* Checkbox */}
                                   <button
-                                    onClick={() => {
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       if (!hasSub) {
                                         toggleTopic(topic.id, isTopicCompleted(topic.id));
                                       } else {
@@ -417,7 +419,14 @@ export const DashboardPage: React.FC = () => {
                                   </button>
 
                                   {/* Topic Title & Badges */}
-                                  <div className="flex-1 min-w-0">
+                                  <div
+                                    className={`flex-1 min-w-0 ${!hasSub ? 'cursor-pointer select-none' : ''}`}
+                                    onClick={() => {
+                                      if (!hasSub) {
+                                        toggleTopic(topic.id, isTopicCompleted(topic.id));
+                                      }
+                                    }}
+                                  >
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <span
                                         className={`text-xs font-semibold ${
@@ -462,7 +471,14 @@ export const DashboardPage: React.FC = () => {
                                               onClick={() => toggleTopic(st.id, isSubDone)}
                                               className="flex items-center gap-2 py-0.5 cursor-pointer select-none group"
                                             >
-                                              <button className="shrink-0 text-slate-400 group-hover:text-indigo-600 transition-colors">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleTopic(st.id, isSubDone);
+                                                }}
+                                                className="shrink-0 text-slate-400 group-hover:text-indigo-600 transition-colors"
+                                              >
                                                 {isSubDone ? (
                                                   <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
                                                 ) : (

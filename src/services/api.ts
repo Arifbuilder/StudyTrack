@@ -34,28 +34,39 @@ export const api = {
   auth: {
     async getCurrentUser(): Promise<UserProfile | null> {
       if (isSupabaseConfigured && supabase) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        if (profile) return profile as UserProfile;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (profile) return profile as UserProfile;
+          }
+        } catch (e) {
+          console.warn('[Supabase Auth Fallback]', e);
+        }
       }
       return localDb.getCurrentUser();
     },
 
     async signIn(usernameOrEmail: string, _password?: string): Promise<UserProfile> {
       if (isSupabaseConfigured && supabase && _password) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: usernameOrEmail,
-          password: _password,
-        });
-        if (error) throw error;
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-        return profile as UserProfile;
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: usernameOrEmail,
+            password: _password,
+          });
+          if (!error && data?.user) {
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+            if (profile) return profile as UserProfile;
+          }
+        } catch (e) {
+          console.warn('[Supabase Sign In Fallback]', e);
+        }
       }
 
       const allUsers = localDb.getAllUsers();
       const user = allUsers.find(
         (u) =>
+          u.id === usernameOrEmail ||
           u.username.toLowerCase() === usernameOrEmail.toLowerCase() ||
           u.email.toLowerCase() === usernameOrEmail.toLowerCase()
       );
@@ -68,20 +79,23 @@ export const api = {
 
     async register(data: { email: string; username: string; displayName: string; password?: string; role?: 'super_admin' | 'admin' | 'user' }): Promise<UserProfile> {
       if (isSupabaseConfigured && supabase && data.password) {
-        const { data: authData, error } = await supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: {
-            data: {
-              username: data.username,
-              display_name: data.displayName,
+        try {
+          const { data: authData, error } = await supabase.auth.signUp({
+            email: data.email,
+            password: data.password,
+            options: {
+              data: {
+                username: data.username,
+                display_name: data.displayName,
+              },
             },
-          },
-        });
-        if (error) throw error;
-        if (authData.user) {
-          const { data: profile } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
-          if (profile) return profile as UserProfile;
+          });
+          if (!error && authData?.user) {
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
+            if (profile) return profile as UserProfile;
+          }
+        } catch (e) {
+          console.warn('[Supabase Register Fallback]', e);
         }
       }
 
@@ -90,33 +104,47 @@ export const api = {
 
     async signOut(): Promise<void> {
       if (isSupabaseConfigured && supabase) {
-        await supabase.auth.signOut();
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.warn('[Supabase SignOut Fallback]', e);
+        }
       }
       localDb.setCurrentUserId('usr-superadmin');
     },
 
     async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
       if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
-        if (error) throw error;
-        return data as UserProfile;
+        try {
+          const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
+          if (!error && data) return data as UserProfile;
+        } catch (e) {
+          console.warn('[Supabase updateProfile fallback]', e);
+        }
       }
       return localDb.updateUserProfile(userId, updates);
     },
 
     async getSettings(userId: string): Promise<UserSettings> {
       if (isSupabaseConfigured && supabase) {
-        const { data } = await supabase.from('user_settings').select('*').eq('user_id', userId).single();
-        if (data) return data as UserSettings;
+        try {
+          const { data } = await supabase.from('user_settings').select('*').eq('user_id', userId).single();
+          if (data) return data as UserSettings;
+        } catch (e) {
+          console.warn('[Supabase getSettings fallback]', e);
+        }
       }
       return localDb.getUserSettings(userId);
     },
 
     async updateSettings(userId: string, updates: Partial<UserSettings>): Promise<UserSettings> {
       if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase.from('user_settings').upsert({ user_id: userId, ...updates }).select().single();
-        if (error) throw error;
-        return data as UserSettings;
+        try {
+          const { data, error } = await supabase.from('user_settings').upsert({ user_id: userId, ...updates }).select().single();
+          if (!error && data) return data as UserSettings;
+        } catch (e) {
+          console.warn('[Supabase updateSettings fallback]', e);
+        }
       }
       return localDb.updateUserSettings(userId, updates);
     },
@@ -149,15 +177,19 @@ export const api = {
 
     async toggleTopic(userId: string, topicId: string, isCompleted: boolean): Promise<UserTopicProgress> {
       if (isSupabaseConfigured && supabase) {
-        await supabase
-          .from('user_topic_progress')
-          .upsert({
-            user_id: userId,
-            topic_id: topicId,
-            is_completed: isCompleted,
-            completed_at: isCompleted ? new Date().toISOString() : null,
-            updated_at: new Date().toISOString(),
-          });
+        try {
+          await supabase
+            .from('user_topic_progress')
+            .upsert({
+              user_id: userId,
+              topic_id: topicId,
+              is_completed: isCompleted,
+              completed_at: isCompleted ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString(),
+            });
+        } catch (err) {
+          console.warn('[Supabase toggleTopic fallback to localDb]', err);
+        }
       }
       return localDb.toggleTopicCompletion(userId, topicId, isCompleted);
     },

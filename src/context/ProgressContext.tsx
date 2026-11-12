@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
-import { realtimeChannel } from '../services/localDatabase';
+import { localDb, realtimeChannel } from '../services/localDatabase';
 import { Topic, OverallProgressSummary, UserTopicProgress } from '../types';
 import confetti from 'canvas-confetti';
 
@@ -43,7 +43,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoading, setIsLoading] = useState(true);
 
   const loadProgress = useCallback(async () => {
-    if (!user) {
+    const activeUserId = user?.id || localDb.getCurrentUserId();
+    if (!activeUserId) {
       setCompletedTopicIds(new Set());
       setProgressMap(new Map());
       setIsLoading(false);
@@ -51,7 +52,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     try {
-      const records = await api.progress.getUserProgress(user.id);
+      const records = await api.progress.getUserProgress(activeUserId);
       const completedSet = new Set<string>();
       const map = new Map<string, UserTopicProgress>();
 
@@ -91,7 +92,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Overall summary calculated from real records
   const overallSummary = useMemo(() => {
-    if (!user) {
+    const activeUserId = user?.id || localDb.getCurrentUserId();
+    if (!activeUserId) {
       return {
         completedLeafCount: 0,
         totalLeafCount: 0,
@@ -99,23 +101,25 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         subjectSummaries: [],
       };
     }
-    return api.progress.calculateOverall(user.id);
+    return api.progress.calculateOverall(activeUserId);
   }, [user, completedTopicIds]);
 
   const readiness = useMemo(() => {
-    if (!user) {
+    const activeUserId = user?.id || localDb.getCurrentUserId();
+    if (!activeUserId) {
       return {
         score: 0,
         label: 'Not Started',
         breakdown: { coverage: 0, highPriorityCoverage: 0, revisionScore: 0 },
       };
     }
-    return api.progress.calculateReadiness(user.id);
+    return api.progress.calculateReadiness(activeUserId);
   }, [user, completedTopicIds, progressMap]);
 
   // Optimistic Topic Toggle with instant feedback & rollback safeguard
   const toggleTopic = async (topicId: string, currentCompletedState: boolean) => {
-    if (!user) return;
+    const activeUserId = user?.id || localDb.getCurrentUserId();
+    if (!activeUserId) return;
 
     const nextState = !currentCompletedState;
 
@@ -143,21 +147,31 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // 2. Persist to DB
     try {
-      const updatedRecord = await api.progress.toggleTopic(user.id, topicId, nextState);
+      const updatedRecord = await api.progress.toggleTopic(activeUserId, topicId, nextState);
       setProgressMap((prev) => {
         const nextMap = new Map(prev);
         nextMap.set(topicId, updatedRecord);
         return nextMap;
       });
     } catch (err) {
-      console.error('Failed to toggle topic, rolling back optimistic state:', err);
-      // Rollback
-      setCompletedTopicIds((prev) => {
-        const rollback = new Set(prev);
-        if (currentCompletedState) rollback.add(topicId);
-        else rollback.delete(topicId);
-        return rollback;
-      });
+      console.warn('Persist to API had warning/error, saving to local state:', err);
+      try {
+        const updatedRecord = localDb.toggleTopicCompletion(activeUserId, topicId, nextState);
+        setProgressMap((prev) => {
+          const nextMap = new Map(prev);
+          nextMap.set(topicId, updatedRecord);
+          return nextMap;
+        });
+      } catch (fallbackErr) {
+        console.error('Failed to toggle topic, rolling back optimistic state:', fallbackErr);
+        // Rollback only if local persistence also fails
+        setCompletedTopicIds((prev) => {
+          const rollback = new Set(prev);
+          if (currentCompletedState) rollback.add(topicId);
+          else rollback.delete(topicId);
+          return rollback;
+        });
+      }
     }
   };
 
@@ -170,9 +184,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       notes?: string;
     }
   ) => {
-    if (!user) return;
+    const activeUserId = user?.id || localDb.getCurrentUserId();
+    if (!activeUserId) return;
     try {
-      const res = await api.progress.updateRevision(user.id, topicId, updates);
+      const res = await api.progress.updateRevision(activeUserId, topicId, updates);
       setProgressMap((prev) => {
         const nextMap = new Map(prev);
         nextMap.set(topicId, res);

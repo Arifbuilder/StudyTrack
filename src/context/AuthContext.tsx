@@ -104,6 +104,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchUser = (userId: string) => {
+    const found = allUsers.find((u) => u.id === userId) || localDb.getAllUsers().find((u) => u.id === userId);
+    if (found) {
+      setUser(found);
+    }
     localDb.setCurrentUserId(userId);
     loadCurrentUser();
   };

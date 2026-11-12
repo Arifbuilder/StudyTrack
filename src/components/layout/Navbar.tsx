@@ -165,6 +165,41 @@ export const Navbar: React.FC = () => {
                   )}
                 </div>
 
+                {/* Account Switcher */}
+                {allUsers.length > 1 && (
+                  <div className="py-1 border-t border-slate-100 dark:border-slate-800">
+                    <p className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                      Switch Account
+                    </p>
+                    <div className="max-h-36 overflow-y-auto space-y-0.5">
+                      {allUsers.map((u) => {
+                        const isActive = u.id === user?.id;
+                        return (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => {
+                              switchUser(u.id);
+                              setUserDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ${
+                              isActive
+                                ? 'bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold'
+                                : 'text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <img src={u.avatarUrl} alt={u.displayName} className="w-4 h-4 rounded-full" />
+                              <span className="truncate">{u.displayName}</span>
+                            </div>
+                            {isActive && <span className="text-[10px] text-indigo-500 font-medium">Active</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
                   <button
                     onClick={() => logout()}
