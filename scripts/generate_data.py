@@ -1,0 +1,878 @@
+import json
+import os
+
+syllabus_data = {
+    "university": "APJ Abdul Kalam Technological University (KTU)",
+    "scheme": "2019 Scheme",
+    "semester": "S7",
+    "subjects": [
+        {
+            "id": "sub-cst401-ai",
+            "code": "CST401",
+            "name": "Artificial Intelligence",
+            "shortName": "AI",
+            "category": "Core",
+            "credits": 4,
+            "lectureHours": 36,
+            "color": "indigo",
+            "textbook": "Stuart Russell and Peter Norvig, Artificial Intelligence: A Modern Approach (3rd edition)",
+            "description": "Comprehensive study of rational agents, search techniques, adversarial search, constraint satisfaction, first-order logical reasoning, and machine learning fundamentals.",
+            "modules": [
+                {
+                    "id": "cst401-m1",
+                    "moduleNumber": 1,
+                    "title": "Introduction to Artificial Intelligence",
+                    "lectureHours": 7,
+                    "description": "Foundations, history, applications of AI, and structure of rational agents and environments.",
+                    "topics": [
+                        {
+                            "id": "cst401-m1-t1",
+                            "title": "Introduction to Artificial Intelligence",
+                            "description": "Core overview of artificial intelligence and artificial intelligence definitions.",
+                            "priority": "MEDIUM",
+                            "order": 1,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m1-t2",
+                            "title": "What is Artificial Intelligence (AI)?",
+                            "description": "Thinking humanly, thinking rationally, acting humanly (Turing test), and acting rationally.",
+                            "priority": "HIGH",
+                            "order": 2,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m1-t3",
+                            "title": "Foundations of AI",
+                            "description": "Contributions of philosophy, mathematics, economics, neuroscience, psychology, computer engineering, control theory, and linguistics.",
+                            "priority": "MEDIUM",
+                            "order": 3,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m1-t4",
+                            "title": "History of Artificial Intelligence",
+                            "description": "Gestation of AI (1943-1955), birth of AI (Dartmouth 1956), early enthusiasm, reality checks, knowledge-based systems, AI winter, and AI resurgence.",
+                            "priority": "MEDIUM",
+                            "order": 4,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m1-t5",
+                            "title": "Applications of Artificial Intelligence",
+                            "description": "Robotic vehicles, speech recognition, autonomous planning and scheduling, game playing, spam fighting, logistics planning, machine translation.",
+                            "priority": "MEDIUM",
+                            "order": 5,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m1-t6",
+                            "title": "Intelligent Agents",
+                            "description": "Architectural foundation of agents, rationality, environment classifications, and agent structures.",
+                            "priority": "VERY_HIGH",
+                            "order": 6,
+                            "subtopics": [
+                                {"id": "cst401-m1-t6-s1", "title": "Agents and environments", "priority": "HIGH", "order": 1},
+                                {"id": "cst401-m1-t6-s2", "title": "Good behaviour of agents", "priority": "MEDIUM", "order": 2},
+                                {"id": "cst401-m1-t6-s3", "title": "Concept of rationality", "priority": "HIGH", "order": 3},
+                                {"id": "cst401-m1-t6-s4", "title": "Rational agents", "priority": "HIGH", "order": 4},
+                                {"id": "cst401-m1-t6-s5", "title": "Nature of environments (PEAS & environment properties: observable, deterministic, episodic, static, discrete, single-agent)", "priority": "VERY_HIGH", "order": 5},
+                                {"id": "cst401-m1-t6-s6", "title": "Structure of agents (Simple reflex, Model-based reflex, Goal-based, Utility-based, Learning agents)", "priority": "VERY_HIGH", "order": 6}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "cst401-m2",
+                    "moduleNumber": 2,
+                    "title": "Problem Solving by Searching",
+                    "lectureHours": 7,
+                    "description": "Problem-solving agents, state spaces, uninformed search strategies, informed search (heuristic algorithms), and admissible heuristics.",
+                    "topics": [
+                        {
+                            "id": "cst401-m2-t1",
+                            "title": "Solving problems by searching",
+                            "description": "Formulating problems and searching for solution paths in state space.",
+                            "priority": "MEDIUM",
+                            "order": 1,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m2-t2",
+                            "title": "Problem-solving agents",
+                            "description": "Goal formulation, problem formulation, search, and execution phase.",
+                            "priority": "HIGH",
+                            "order": 2,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m2-t3",
+                            "title": "Example problems",
+                            "description": "Toy problems (8-puzzle, 8-queens, vacuum world) and real-world problems (route finding, touring, VLSI layout, robot navigation).",
+                            "priority": "HIGH",
+                            "order": 3,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m2-t4",
+                            "title": "Illustration of the problem-solving process by agents",
+                            "description": "Initial state, actions, transition model, goal test, path cost.",
+                            "priority": "HIGH",
+                            "order": 4,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m2-t5",
+                            "title": "Searching for solutions",
+                            "description": "Search tree generation, node expansion, looping paths, redundant paths, graph search vs tree search.",
+                            "priority": "HIGH",
+                            "order": 5,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m2-t6",
+                            "title": "Uninformed search strategies",
+                            "description": "Classic blind search strategies with time/space complexity analysis, completeness, and optimality.",
+                            "priority": "VERY_HIGH",
+                            "order": 6,
+                            "subtopics": [
+                                {"id": "cst401-m2-t6-s1", "title": "Breadth-First Search (BFS)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst401-m2-t6-s2", "title": "Uniform-Cost Search (UCS)", "priority": "HIGH", "order": 2},
+                                {"id": "cst401-m2-t6-s3", "title": "Depth-First Search (DFS)", "priority": "VERY_HIGH", "order": 3},
+                                {"id": "cst401-m2-t6-s4", "title": "Depth-Limited Search (DLS)", "priority": "HIGH", "order": 4},
+                                {"id": "cst401-m2-t6-s5", "title": "Iterative Deepening Depth-First Search (IDDFS)", "priority": "VERY_HIGH", "order": 5}
+                            ]
+                        },
+                        {
+                            "id": "cst401-m2-t7",
+                            "title": "Informed search strategies",
+                            "description": "Heuristic-guided evaluation functions f(n) and optimal search.",
+                            "priority": "VERY_HIGH",
+                            "order": 7,
+                            "subtopics": [
+                                {"id": "cst401-m2-t7-s1", "title": "Best-First Search (Greedy Best-First)", "priority": "HIGH", "order": 1},
+                                {"id": "cst401-m2-t7-s2", "title": "A* Search (Algorithm, optimality proof, admissibility, consistency)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        },
+                        {
+                            "id": "cst401-m2-t8",
+                            "title": "Heuristic functions",
+                            "description": "Effect of heuristic accuracy, generating admissible heuristics from relaxed problems, pattern databases, dominance.",
+                            "priority": "VERY_HIGH",
+                            "order": 8,
+                            "subtopics": []
+                        }
+                    ]
+                },
+                {
+                    "id": "cst401-m3",
+                    "moduleNumber": 3,
+                    "title": "Search in Complex Environments",
+                    "lectureHours": 7,
+                    "description": "Adversarial games, optimal game decisions, Minimax, Alpha-Beta pruning, and Constraint Satisfaction Problems (CSPs).",
+                    "topics": [
+                        {
+                            "id": "cst401-m3-t1",
+                            "title": "Adversarial Search",
+                            "description": "Game theory and competitive environments.",
+                            "priority": "VERY_HIGH",
+                            "order": 1,
+                            "subtopics": [
+                                {"id": "cst401-m3-t1-s1", "title": "Games (Deterministic, turn-taking, zero-sum, perfect information games)", "priority": "HIGH", "order": 1},
+                                {"id": "cst401-m3-t1-s2", "title": "Optimal decisions in games", "priority": "HIGH", "order": 2},
+                                {"id": "cst401-m3-t1-s3", "title": "Minimax algorithm (Tree evaluation, pseudocode, time & space complexity)", "priority": "VERY_HIGH", "order": 3},
+                                {"id": "cst401-m3-t1-s4", "title": "Alpha-Beta Pruning (Mathematical conditions, pruning effectiveness, order of node visits)", "priority": "VERY_HIGH", "order": 4}
+                            ]
+                        },
+                        {
+                            "id": "cst401-m3-t2",
+                            "title": "Constraint Satisfaction Problems (CSP)",
+                            "description": "Variables, domains, and constraints with propagation and backtracking.",
+                            "priority": "VERY_HIGH",
+                            "order": 2,
+                            "subtopics": [
+                                {"id": "cst401-m3-t2-s1", "title": "Defining CSP (Variables X, Domains D, Constraints C; Map coloring, Cryptarithmetic)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst401-m3-t2-s2", "title": "Constraint propagation (Node consistency, Arc consistency AC-3, Path consistency)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst401-m3-t2-s3", "title": "Inference in CSPs (Forward checking and constraint propagation)", "priority": "HIGH", "order": 3},
+                                {"id": "cst401-m3-t2-s4", "title": "Backtracking search for CSPs (MRV heuristic, Degree heuristic, Least Constraining Value)", "priority": "VERY_HIGH", "order": 4},
+                                {"id": "cst401-m3-t2-s5", "title": "Structure of CSP problems (Independent subproblems, Tree-structured CSPs, Cutset conditioning)", "priority": "HIGH", "order": 5}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "cst401-m4",
+                    "moduleNumber": 4,
+                    "title": "Knowledge Representation and Reasoning",
+                    "lectureHours": 9,
+                    "description": "Logical agents, Propositional Logic theorem proving, First-Order Logic syntax/semantics, Unification, Forward/Backward chaining, and Resolution.",
+                    "topics": [
+                        {
+                            "id": "cst401-m4-t1",
+                            "title": "Logical Agents",
+                            "description": "Knowledge bases and reasoning principles.",
+                            "priority": "HIGH",
+                            "order": 1,
+                            "subtopics": [
+                                {"id": "cst401-m4-t1-s1", "title": "Knowledge-based agents (TELL, ASK, KB architecture, Wumpus world environment)", "priority": "HIGH", "order": 1},
+                                {"id": "cst401-m4-t1-s2", "title": "Logic (Syntax, semantics, entailment, model checking, inference soundness and completeness)", "priority": "HIGH", "order": 2}
+                            ]
+                        },
+                        {
+                            "id": "cst401-m4-t2",
+                            "title": "Propositional Logic",
+                            "description": "Boolean logic syntax, semantics, and equivalence.",
+                            "priority": "VERY_HIGH",
+                            "order": 2,
+                            "subtopics": [
+                                {"id": "cst401-m4-t2-s1", "title": "Propositional logic (Syntax, semantics, truth tables, logical equivalence)", "priority": "HIGH", "order": 1},
+                                {"id": "cst401-m4-t2-s2", "title": "Propositional theorem proving (Inference rules, Modus Ponens, Resolution in PL, CNF conversion)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst401-m4-t2-s3", "title": "Agents based on propositional logic (Finding pits and wumpus with SAT reasoning)", "priority": "MEDIUM", "order": 3}
+                            ]
+                        },
+                        {
+                            "id": "cst401-m4-t3",
+                            "title": "First-Order Predicate Logic (FOL)",
+                            "description": "Objects, relations, functions, quantifiers and knowledge engineering.",
+                            "priority": "VERY_HIGH",
+                            "order": 3,
+                            "subtopics": [
+                                {"id": "cst401-m4-t3-s1", "title": "Syntax of First-Order Logic (Constants, variables, predicates, functions, quantifiers)", "priority": "HIGH", "order": 1},
+                                {"id": "cst401-m4-t3-s2", "title": "Semantics of First-Order Logic (Models, interpretations, truth values)", "priority": "HIGH", "order": 2},
+                                {"id": "cst401-m4-t3-s3", "title": "Using First-Order Logic (Universal & existential assertions, nested quantifiers)", "priority": "HIGH", "order": 3},
+                                {"id": "cst401-m4-t3-s4", "title": "Knowledge representation in First-Order Logic (Kinship domains, numbers, sets, lists)", "priority": "HIGH", "order": 4}
+                            ]
+                        },
+                        {
+                            "id": "cst401-m4-t4",
+                            "title": "Inference in First-Order Logic",
+                            "description": "Generalized Modus Ponens, unification, chaining, and resolution refutation.",
+                            "priority": "VERY_HIGH",
+                            "order": 4,
+                            "subtopics": [
+                                {"id": "cst401-m4-t4-s1", "title": "Propositional vs First-Order inference (Universal & Existential Instantiation, Skolemization)", "priority": "HIGH", "order": 1},
+                                {"id": "cst401-m4-t4-s2", "title": "Unification (Most General Unifier MGU algorithm)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst401-m4-t4-s3", "title": "Lifting (Generalized Modus Ponens GMP)", "priority": "HIGH", "order": 3},
+                                {"id": "cst401-m4-t4-s4", "title": "Forward chaining (Datalog forward chaining, efficiency issues, rete algorithm concept)", "priority": "VERY_HIGH", "order": 4},
+                                {"id": "cst401-m4-t4-s5", "title": "Backward chaining (Prolog-style logic programming, depth-first goal search)", "priority": "VERY_HIGH", "order": 5},
+                                {"id": "cst401-m4-t4-s6", "title": "Resolution (Converting FOL to CNF, resolution rule, proof by contradiction)", "priority": "VERY_HIGH", "order": 6}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "cst401-m5",
+                    "moduleNumber": 5,
+                    "title": "Machine Learning",
+                    "lectureHours": 6,
+                    "description": "Supervised learning concepts, Decision Tree induction (ID3/Entropy), Overfitting, Model evaluation, and Linear Models.",
+                    "topics": [
+                        {
+                            "id": "cst401-m5-t1",
+                            "title": "Learning from examples",
+                            "description": "Introduction to machine learning agent design and inductive learning hypothesis.",
+                            "priority": "HIGH",
+                            "order": 1,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m5-t2",
+                            "title": "Forms of learning",
+                            "description": "Supervised, unsupervised, semi-supervised, and reinforcement learning paradigms.",
+                            "priority": "HIGH",
+                            "order": 2,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m5-t3",
+                            "title": "Supervised learning",
+                            "description": "Function approximation, training set, test set, hypothesis space, Ockham razor.",
+                            "priority": "HIGH",
+                            "order": 3,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m5-t4",
+                            "title": "Learning decision trees",
+                            "description": "Decision tree representation, entropy, information gain, ID3 algorithm walkthrough with restaurant example.",
+                            "priority": "VERY_HIGH",
+                            "order": 4,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m5-t5",
+                            "title": "Generalization and overfitting",
+                            "description": "Causes of overfitting, bias-variance tradeoff, tree pruning, validation sets, k-fold cross-validation.",
+                            "priority": "VERY_HIGH",
+                            "order": 5,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m5-t6",
+                            "title": "Evaluating and choosing the best hypothesis",
+                            "description": "Confusion matrix, accuracy, precision, recall, F1-score, ROC curve.",
+                            "priority": "HIGH",
+                            "order": 6,
+                            "subtopics": []
+                        },
+                        {
+                            "id": "cst401-m5-t7",
+                            "title": "Regression and classification with linear models",
+                            "description": "Univariate and multivariate linear regression, gradient descent, logistic regression, sigmoid activation, decision boundaries.",
+                            "priority": "VERY_HIGH",
+                            "order": 7,
+                            "subtopics": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "sub-ect425-bmi",
+            "code": "ECT425",
+            "name": "Biomedical Instrumentation",
+            "shortName": "BMI",
+            "category": "Open Elective",
+            "credits": 3,
+            "lectureHours": 35,
+            "color": "emerald",
+            "textbook": "J. G. Webster, Medical Instrumentation: Application and Design",
+            "description": "Comprehensive study of human physiological systems, bioelectric potentials, biopotential electrodes, ECG machines, cardiovascular measurements, EEG, EMG, therapeutic aids, modern imaging modalities, and electrical hospital safety.",
+            "modules": [
+                {
+                    "id": "ect425-m1",
+                    "moduleNumber": 1,
+                    "title": "Introduction to Human Physiological System",
+                    "lectureHours": 7,
+                    "description": "Human physiological systems, bioelectric potentials, resting & action potential generation, and bioelectric potential recordings.",
+                    "topics": [
+                        {"id": "ect425-m1-t1", "title": "Physiological systems of the human body", "description": "Overview of cardiovascular, nervous, respiratory, and muscular systems.", "priority": "MEDIUM", "order": 1, "subtopics": []},
+                        {"id": "ect425-m1-t2", "title": "Heart and cardiovascular system", "description": "Gross anatomy of heart, cardiac chambers, blood flow, cardiac cycle, and electrical conduction.", "priority": "HIGH", "order": 2, "subtopics": []},
+                        {"id": "ect425-m1-t3", "title": "Anatomy of the nervous system", "description": "Central nervous system (CNS), peripheral nervous system (PNS), neurons, synapses, and reflex arc.", "priority": "MEDIUM", "order": 3, "subtopics": []},
+                        {"id": "ect425-m1-t4", "title": "Physiology of the respiratory system", "description": "Lungs, airways, gas exchange mechanics, alveolar diffusion, and regulation of respiration.", "priority": "MEDIUM", "order": 4, "subtopics": []},
+                        {"id": "ect425-m1-t5", "title": "Problems encountered in biomedical measurements", "description": "Inaccessibility of signals, low signal-to-noise ratio, variability, transducer loading effects, motion artifacts.", "priority": "HIGH", "order": 5, "subtopics": []},
+                        {"id": "ect425-m1-t6", "title": "Sources of bioelectric potentials", "description": "Cellular ionic concentrations (Na+, K+, Cl-), semipermeable membranes, and Nernst equation.", "priority": "HIGH", "order": 6, "subtopics": []},
+                        {"id": "ect425-m1-t7", "title": "Resting potential", "description": "Electrochemical equilibrium, Goldman-Hodgkin-Katz equation, sodium-potassium ATPase pump.", "priority": "VERY_HIGH", "order": 7, "subtopics": []},
+                        {"id": "ect425-m1-t8", "title": "Action potential", "description": "Depolarization threshold, all-or-none law, repolarization, hyperpolarization, absolute & relative refractory periods.", "priority": "VERY_HIGH", "order": 8, "subtopics": []},
+                        {"id": "ect425-m1-t9", "title": "Propagation of action potentials", "description": "Unmyelinated continuous conduction vs myelinated saltatory conduction via Nodes of Ranvier.", "priority": "HIGH", "order": 9, "subtopics": []},
+                        {
+                            "id": "ect425-m1-t10",
+                            "title": "Examples of bioelectric potentials",
+                            "description": "Diagnostic electrophysiological signals, typical amplitudes and frequency spectrum.",
+                            "priority": "VERY_HIGH",
+                            "order": 10,
+                            "subtopics": [
+                                {"id": "ect425-m1-t10-s1", "title": "Electrocardiogram (ECG)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "ect425-m1-t10-s2", "title": "Electroencephalogram (EEG)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "ect425-m1-t10-s3", "title": "Electromyogram (EMG)", "priority": "HIGH", "order": 3},
+                                {"id": "ect425-m1-t10-s4", "title": "Electroretinogram (ERG)", "priority": "MEDIUM", "order": 4},
+                                {"id": "ect425-m1-t10-s5", "title": "Electrooculogram (EOG)", "priority": "MEDIUM", "order": 5},
+                                {"id": "ect425-m1-t10-s6", "title": "Electrogastrogram (EGG)", "priority": "MEDIUM", "order": 6}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ect425-m2",
+                    "moduleNumber": 2,
+                    "title": "Biopotential Electrodes and ECG",
+                    "lectureHours": 8,
+                    "description": "Electrode theory, electrode-electrolyte interface, half-cell potential, biopotential amplifiers, ECG leads, Einthoven triangle, and ECG machine architecture.",
+                    "topics": [
+                        {"id": "ect425-m2-t1", "title": "Biopotential electrodes", "description": "Electrode-electrolyte interface, charge transfer, polarizable vs non-polarizable electrodes (Ag/AgCl).", "priority": "VERY_HIGH", "order": 1, "subtopics": []},
+                        {"id": "ect425-m2-t2", "title": "Basic theory of electrodes", "description": "Equivalent circuit model of electrode-skin interface, half-cell potential, motion artifact generation.", "priority": "HIGH", "order": 2, "subtopics": []},
+                        {"id": "ect425-m2-t3", "title": "Microelectrodes", "description": "Metal microelectrodes, micropipette glass electrodes for intracellular potential measurement.", "priority": "HIGH", "order": 3, "subtopics": []},
+                        {"id": "ect425-m2-t4", "title": "Skin surface electrodes", "description": "Immersion, suction cup, floating electrodes, flexible electrodes, disposable pre-gelled electrodes.", "priority": "HIGH", "order": 4, "subtopics": []},
+                        {"id": "ect425-m2-t5", "title": "Needle electrodes", "description": "Subcutaneous, concentric needle, bipolar needle electrodes for localized EMG recordings.", "priority": "HIGH", "order": 5, "subtopics": []},
+                        {"id": "ect425-m2-t6", "title": "Biochemical transducers", "description": "Reference electrodes (calomel, Ag/AgCl), pH electrode, pO2 Clark electrode, pCO2 Severinghaus electrode.", "priority": "VERY_HIGH", "order": 6, "subtopics": []},
+                        {"id": "ect425-m2-t7", "title": "Transducers for biomedical applications", "description": "Displacement, pressure, temperature, photoelectric, and piezoelectric transducers in medicine.", "priority": "HIGH", "order": 7, "subtopics": []},
+                        {"id": "ect425-m2-t8", "title": "Instrumentation for clinical laboratories", "description": "Spectrophotometers, automated biochemical analyzers, flame photometers.", "priority": "MEDIUM", "order": 8, "subtopics": []},
+                        {
+                            "id": "ect425-m2-t9",
+                            "title": "Biopotential amplifiers",
+                            "description": "High CMRR, high input impedance, low-noise front-end clinical amplifiers.",
+                            "priority": "VERY_HIGH",
+                            "order": 9,
+                            "subtopics": [
+                                {"id": "ect425-m2-t9-s1", "title": "Instrumentation amplifiers (3-opamp design, CMRR derivation, gain formula)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "ect425-m2-t9-s2", "title": "Isolation amplifiers (Optical, transformer-coupled, capacitive patient isolation)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "ect425-m2-t9-s3", "title": "Chopper amplifiers (Low-drift modulation/demodulation for DC biomedical signals)", "priority": "HIGH", "order": 3}
+                            ]
+                        },
+                        {"id": "ect425-m2-t10", "title": "Electrical conduction system of the heart", "description": "Sinoatrial (SA) node, atrioventricular (AV) node, Bundle of His, bundle branches, Purkinje fibers.", "priority": "VERY_HIGH", "order": 10, "subtopics": []},
+                        {"id": "ect425-m2-t11", "title": "Electrocardiograph", "description": "P-wave, QRS-complex, T-wave, PR interval, ST segment, QT interval clinical significance.", "priority": "VERY_HIGH", "order": 11, "subtopics": []},
+                        {"id": "ect425-m2-t12", "title": "ECG electrodes and leads", "description": "Standard 12-lead system: bipolar limb leads (I, II, III), augmented unipolar leads (aVR, aVL, aVF), precordial chest leads (V1-V6).", "priority": "VERY_HIGH", "order": 12, "subtopics": []},
+                        {"id": "ect425-m2-t13", "title": "Einthoven's triangle", "description": "Einthoven law, cardiac vector hypothesis, Wilson central terminal (WCT).", "priority": "VERY_HIGH", "order": 13, "subtopics": []},
+                        {"id": "ect425-m2-t14", "title": "ECG readout devices", "description": "Thermal array recorders, digital displays, telemetry transmission, Holter monitor recording.", "priority": "MEDIUM", "order": 14, "subtopics": []},
+                        {"id": "ect425-m2-t15", "title": "ECG machine - block diagram", "description": "Protection circuit, lead selector, pre-amplifier, driven right leg (DRL) circuit, bandpass filters, main amplifier, driver stage, power supply.", "priority": "VERY_HIGH", "order": 15, "subtopics": []}
+                    ]
+                },
+                {
+                    "id": "ect425-m3",
+                    "moduleNumber": 3,
+                    "title": "Measurement of Blood Pressure, Blood Flow and Heart Sound",
+                    "lectureHours": 7,
+                    "description": "Direct and indirect blood pressure measurements, electromagnetic & ultrasonic blood flowmeters, cardiac output, plethysmography, and phonocardiography.",
+                    "topics": [
+                        {"id": "ect425-m3-t1", "title": "Measurement of blood pressure", "description": "Systolic, diastolic, mean arterial pressure (MAP), and physiology of vascular resistance.", "priority": "HIGH", "order": 1, "subtopics": []},
+                        {"id": "ect425-m3-t2", "title": "Direct blood pressure measurement", "description": "Catheter-tip pressure sensors, fluid-filled catheter manometers, hydraulic dynamic response.", "priority": "VERY_HIGH", "order": 2, "subtopics": []},
+                        {"id": "ect425-m3-t3", "title": "Indirect blood pressure measurement", "description": "Sphygmomanometer cuff, Korotkoff sounds (phases 1 to 5), auscultatory method.", "priority": "VERY_HIGH", "order": 3, "subtopics": []},
+                        {"id": "ect425-m3-t4", "title": "Oscillometric measurement method", "description": "Automated non-invasive blood pressure (NIBP), pressure pulse oscillations, peak envelope detection.", "priority": "VERY_HIGH", "order": 4, "subtopics": []},
+                        {"id": "ect425-m3-t5", "title": "Ultrasonic method of blood pressure measurement", "description": "Doppler shift detection of arterial wall motion under cuff occlusive pressure.", "priority": "HIGH", "order": 5, "subtopics": []},
+                        {"id": "ect425-m3-t6", "title": "Measurement of blood flow", "description": "Electromagnetic blood flowmeter (Faraday's law of induction) and Doppler ultrasound flowmeter.", "priority": "VERY_HIGH", "order": 6, "subtopics": []},
+                        {"id": "ect425-m3-t7", "title": "Measurement of cardiac output", "description": "Indicator dilution method, dye dilution, thermodilution technique, Fick principle method.", "priority": "VERY_HIGH", "order": 7, "subtopics": []},
+                        {
+                            "id": "ect425-m3-t8",
+                            "title": "Plethysmography",
+                            "description": "Measurement of organ/limb volume changes for peripheral vascular diagnosis.",
+                            "priority": "VERY_HIGH",
+                            "order": 8,
+                            "subtopics": [
+                                {"id": "ect425-m3-t8-s1", "title": "Photoelectric plethysmography (PPG transmission and reflection, pulse oximetry concept)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "ect425-m3-t8-s2", "title": "Impedance plethysmography (Four-electrode bioimpedance, Nyboer equation, deep vein thrombosis screening)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        },
+                        {"id": "ect425-m3-t9", "title": "Measurement of heart sounds", "description": "First (S1, lub) and second (S2, dub) sounds, murmurs, third and fourth sounds origin.", "priority": "HIGH", "order": 9, "subtopics": []},
+                        {"id": "ect425-m3-t10", "title": "Phonocardiography", "description": "Contact acoustic sensors, bandpass filtering, clinical PCG recording alongside ECG.", "priority": "HIGH", "order": 10, "subtopics": []}
+                    ]
+                },
+                {
+                    "id": "ect425-m4",
+                    "moduleNumber": 4,
+                    "title": "Measurement of EEG, EMG and Respiratory Parameters; Therapeutic Aid",
+                    "lectureHours": 7,
+                    "description": "EEG recording & 10-20 system, brain wave bands, EMG & nerve conduction velocity, spirometry, pacemakers, defibrillators, ventilators, dialysis, and lithotripsy.",
+                    "topics": [
+                        {
+                            "id": "ect425-m4-t1",
+                            "title": "Electroencephalogram (EEG)",
+                            "description": "Brain electrophysiology, electrode placements, and spectral characteristics.",
+                            "priority": "VERY_HIGH",
+                            "order": 1,
+                            "subtopics": [
+                                {"id": "ect425-m4-t1-s1", "title": "Neuronal communication (Postsynaptic potentials, pyramidal cells, cortical dipole layers)", "priority": "HIGH", "order": 1},
+                                {"id": "ect425-m4-t1-s2", "title": "EEG measurement (International 10-20 electrode placement system, reference points nasion & inion)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "ect425-m4-t1-s3", "title": "EEG recording (Unipolar, bipolar, average montage, artifact suppression)", "priority": "HIGH", "order": 3},
+                                {"id": "ect425-m4-t1-s4", "title": "EEG analysis (Delta <4Hz, Theta 4-8Hz, Alpha 8-13Hz, Beta 13-30Hz, Gamma >30Hz waveforms; epilepsy diagnosis)", "priority": "VERY_HIGH", "order": 4}
+                            ]
+                        },
+                        {
+                            "id": "ect425-m4-t2",
+                            "title": "Electromyogram (EMG)",
+                            "description": "Skeletal muscle motor unit action potentials and peripheral nerve testing.",
+                            "priority": "VERY_HIGH",
+                            "order": 2,
+                            "subtopics": [
+                                {"id": "ect425-m4-t2-s1", "title": "Muscle response (Motor unit action potential MUAP, recruitment, neuromuscular junction)", "priority": "HIGH", "order": 1},
+                                {"id": "ect425-m4-t2-s2", "title": "Nerve conduction velocity measurements (Stimulation, latency measurement, conduction calculation v = d/(t2-t1))", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "ect425-m4-t2-s3", "title": "EMG measurements (Needle EMG, surface EMG, signal amplification and audio monitoring)", "priority": "HIGH", "order": 3}
+                            ]
+                        },
+                        {
+                            "id": "ect425-m4-t3",
+                            "title": "Respiratory parameters",
+                            "description": "Lung volumes, capacities, and ventilatory mechanics instrumentation.",
+                            "priority": "HIGH",
+                            "order": 3,
+                            "subtopics": [
+                                {"id": "ect425-m4-t3-s1", "title": "Spirometer (Water-sealed spirometer, dry rolling seal, pneumotachograph, FVC, FEV1)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "ect425-m4-t3-s2", "title": "Pneumograph (Impedance pneumography, chest expansion strain gauge, thermocouple nasal airflow)", "priority": "HIGH", "order": 2}
+                            ]
+                        },
+                        {
+                            "id": "ect425-m4-t4",
+                            "title": "Therapeutic aids",
+                            "description": "Critical medical therapeutic and life-support instrumentation.",
+                            "priority": "VERY_HIGH",
+                            "order": 4,
+                            "subtopics": [
+                                {"id": "ect425-m4-t4-s1", "title": "Cardiac pacemakers (Pacing modes: asynchronous fixed-rate, synchronous demand, ventricular inhibited VVI)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "ect425-m4-t4-s2", "title": "Internal pacemakers (Implantable pulse generator IPG, lithium iodine battery, endocardial leads)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "ect425-m4-t4-s3", "title": "External pacemakers (Temporary transthoracic / transcutaneous pacing systems)", "priority": "HIGH", "order": 3},
+                                {"id": "ect425-m4-t4-s4", "title": "Defibrillators (AC defibrillator, DC defibrillator with Lown waveform, monophasic vs biphasic truncated exponential, AEDs)", "priority": "VERY_HIGH", "order": 4},
+                                {"id": "ect425-m4-t4-s5", "title": "Ventilators (Volume-cycled, pressure-cycled, time-cycled positive pressure mechanical ventilators)", "priority": "HIGH", "order": 5},
+                                {"id": "ect425-m4-t4-s6", "title": "Heart-lung machine (Extracorporeal circulation, peristaltic blood pump, membrane oxygenator, heat exchanger)", "priority": "HIGH", "order": 6},
+                                {"id": "ect425-m4-t4-s7", "title": "Hemodialysis (Artificial kidney, dialyzer semipermeable membrane, dialysate concentrate, ultrafiltration)", "priority": "VERY_HIGH", "order": 7},
+                                {"id": "ect425-m4-t4-s8", "title": "Lithotripsy (Extracorporeal shock-wave lithotripsy ESWL, electrohydraulic / electromagnetic / piezoelectric acoustic shock focusing for renal calculi)", "priority": "HIGH", "order": 8},
+                                {"id": "ect425-m4-t4-s9", "title": "Infant incubators (Thermal regulation, radiant warmers, servo-controlled humidity and oxygenation)", "priority": "MEDIUM", "order": 9}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ect425-m5",
+                    "moduleNumber": 5,
+                    "title": "Advances in Radiological Imaging and Electrical Safety",
+                    "lectureHours": 6,
+                    "description": "Diagnostic X-ray, CT scanning, MRI physics, ultrasound imaging, hospital electrical safety hazards, microshock vs macroshock, and telemedicine.",
+                    "topics": [
+                        {
+                            "id": "ect425-m5-t1",
+                            "title": "X-rays",
+                            "description": "Generation, interactions, diagnostic radiography, and surgical tools.",
+                            "priority": "VERY_HIGH",
+                            "order": 1,
+                            "subtopics": [
+                                {"id": "ect425-m5-t1-s1", "title": "Principles of X-ray generation (Coolidge tube, rotating anode, Bremsstrahlung & characteristic radiation, filtration)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "ect425-m5-t1-s2", "title": "Uses of X-rays (Skeletal, pulmonary, soft tissue radiography)", "priority": "HIGH", "order": 2},
+                                {"id": "ect425-m5-t1-s3", "title": "Diagnostic still-picture imaging (Screen-film radiography, flat-panel digital radiography)", "priority": "HIGH", "order": 3},
+                                {"id": "ect425-m5-t1-s4", "title": "Fluoroscopy (Real-time dynamic X-ray imaging, image intensifier tube optics)", "priority": "VERY_HIGH", "order": 4},
+                                {"id": "ect425-m5-t1-s5", "title": "Angiography (Radiopaque contrast agents, digital subtraction angiography DSA)", "priority": "HIGH", "order": 5},
+                                {"id": "ect425-m5-t1-s6", "title": "Endoscopy (Fiberoptic flexible endoscope, video endoscope, cold light illumination)", "priority": "HIGH", "order": 6},
+                                {"id": "ect425-m5-t1-s7", "title": "Diathermy (Shortwave, microwave, and surgical electrosurgery cutting/coagulation units)", "priority": "VERY_HIGH", "order": 7}
+                            ]
+                        },
+                        {
+                            "id": "ect425-m5-t2",
+                            "title": "Computed Tomography (CT)",
+                            "description": "Cross-sectional volumetric reconstruction and scanner generations.",
+                            "priority": "VERY_HIGH",
+                            "order": 2,
+                            "subtopics": [
+                                {"id": "ect425-m5-t2-s1", "title": "Basic principle (Radon transform, fan beam gantry, Hounsfield units, filtered back-projection reconstruction)", "priority": "VERY_HIGH", "order": 1}
+                            ]
+                        },
+                        {
+                            "id": "ect425-m5-t3",
+                            "title": "Magnetic Resonance Imaging (MRI)",
+                            "description": "Nuclear magnetic resonance physics, RF excitation, and spatial encoding.",
+                            "priority": "VERY_HIGH",
+                            "order": 3,
+                            "subtopics": [
+                                {"id": "ect425-m5-t3-s1", "title": "Basic principle of MRI systems (Hydrogen proton spin precession, Larmor frequency, RF excitation, T1 longitudinal and T2 transverse relaxation, gradient magnetic coils)", "priority": "VERY_HIGH", "order": 1}
+                            ]
+                        },
+                        {"id": "ect425-m5-t4", "title": "Nuclear medicine systems", "description": "Gamma camera (Anger camera), scintillation crystals, collimators, PET and SPECT scanners.", "priority": "HIGH", "order": 4, "subtopics": []},
+                        {"id": "ect425-m5-t5", "title": "Radiation therapy", "description": "Medical linear accelerators (LINAC), teletherapy, brachytherapy, beam collimation and treatment planning.", "priority": "HIGH", "order": 5, "subtopics": []},
+                        {
+                            "id": "ect425-m5-t6",
+                            "title": "Ultrasonic imaging systems",
+                            "description": "Medical acoustic imaging modes and piezoelectric transducers.",
+                            "priority": "VERY_HIGH",
+                            "order": 6,
+                            "subtopics": [
+                                {"id": "ect425-m5-t6-s1", "title": "Introduction (Acoustic impedance matching, pulse-echo reflection principle, piezoelectric transducer arrays)", "priority": "HIGH", "order": 1},
+                                {"id": "ect425-m5-t6-s2", "title": "Basic working principle (A-scan ophthalmic, B-scan 2D cross-section, M-scan echocardiography, Doppler colour flow mapping)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        },
+                        {
+                            "id": "ect425-m5-t7",
+                            "title": "Electrical safety",
+                            "description": "Electromedical safety standards, shock prevention, and grounding systems.",
+                            "priority": "VERY_HIGH",
+                            "order": 7,
+                            "subtopics": [
+                                {"id": "ect425-m5-t7-s1", "title": "Physiological effects of electric current (Perception threshold 1mA, let-go current 10-20mA, ventricular fibrillation 100mA, burns)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "ect425-m5-t7-s2", "title": "Shock hazards from electrical equipment (Macroshock cutaneous contact vs Microshock catheter cardiac contact down to 10-20 microamps, ground loop potentials, leakage currents)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "ect425-m5-t7-s3", "title": "Methods of accident prevention (Chassis grounding, isolated power systems IPS with line isolation monitors LIM, ground fault circuit interrupters GFCI, isolated patient leads)", "priority": "VERY_HIGH", "order": 3}
+                            ]
+                        },
+                        {"id": "ect425-m5-t8", "title": "Introduction to telemedicine", "description": "Store-and-forward vs real-time telemedicine, tele-radiology, tele-cardiology, medical data security and bandwidth requirements.", "priority": "HIGH", "order": 8, "subtopics": []}
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "sub-cst433-sic",
+            "code": "CST433",
+            "name": "Security in Computing",
+            "shortName": "SIC",
+            "category": "Programme Elective",
+            "credits": 3,
+            "lectureHours": 35,
+            "color": "violet",
+            "textbook": "William Stallings, Cryptography and Network Security: Principles and Practice",
+            "description": "Comprehensive study of computer security architecture, classical ciphers, DES, AES, public key cryptosystems (RSA, ElGamal, ECC), cryptographic hash functions, HMAC, digital signatures, key management, intrusion detection, malware, and DDoS defenses.",
+            "modules": [
+                {
+                    "id": "cst433-m1",
+                    "moduleNumber": 1,
+                    "title": "Basics of Security and Traditional Cryptosystems",
+                    "lectureHours": 6,
+                    "description": "OSI security architecture, security services/mechanisms, symmetric cipher model, substitution and transposition ciphers.",
+                    "topics": [
+                        {
+                            "id": "cst433-m1-t1",
+                            "title": "OSI Security Architecture",
+                            "description": "ITU-T Recommendation X.800 framework for systematic security design.",
+                            "priority": "VERY_HIGH",
+                            "order": 1,
+                            "subtopics": [
+                                {"id": "cst433-m1-t1-s1", "title": "Security attacks (Passive attacks: release of message contents, traffic analysis; Active attacks: masquerade, replay, modification, denial of service)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m1-t1-s2", "title": "Security services (Authentication, access control, data confidentiality, data integrity, non-repudiation, availability)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst433-m1-t1-s3", "title": "Security mechanisms (Encipherment, digital signature, access control, data integrity, authentication exchange, traffic padding, routing control, notarization)", "priority": "HIGH", "order": 3}
+                            ]
+                        },
+                        {"id": "cst433-m1-t2", "title": "Cryptography vs Cryptanalysis", "description": "Principles of making ciphers vs breaking ciphers; Kerckhoffs' principle and Shannon's secrecy.", "priority": "HIGH", "order": 2, "subtopics": []},
+                        {"id": "cst433-m1-t3", "title": "Classical encryption techniques", "description": "Foundational concepts of confusion and diffusion, cryptanalytic attack models (ciphertext-only, known-plaintext, chosen-plaintext, chosen-ciphertext).", "priority": "HIGH", "order": 3, "subtopics": []},
+                        {"id": "cst433-m1-t4", "title": "Symmetric cipher model", "description": "Plaintext, encryption algorithm, secret key, ciphertext, decryption algorithm, secrecy requirement.", "priority": "HIGH", "order": 4, "subtopics": []},
+                        {
+                            "id": "cst433-m1-t5",
+                            "title": "Substitution ciphers",
+                            "description": "Replacing letters/symbols with other letters, numbers, or symbols.",
+                            "priority": "VERY_HIGH",
+                            "order": 5,
+                            "subtopics": [
+                                {"id": "cst433-m1-t5-s1", "title": "Monoalphabetic vs Polyalphabetic ciphers (Letter frequency analysis and polyalphabetic period detection)", "priority": "HIGH", "order": 1},
+                                {"id": "cst433-m1-t5-s2", "title": "Caesar cipher (Shift cipher modulo 26, mathematical encryption & decryption, brute-force analysis)", "priority": "HIGH", "order": 2},
+                                {"id": "cst433-m1-t5-s3", "title": "Affine cipher (Key pair (a, b) where gcd(a, 26)=1, encryption C=(aP+b) mod 26, modular inverse decryption)", "priority": "VERY_HIGH", "order": 3},
+                                {"id": "cst433-m1-t5-s4", "title": "Playfair cipher (5x5 matrix key generation, encryption rules for same row/column/rectangle, digraph security)", "priority": "VERY_HIGH", "order": 4},
+                                {"id": "cst433-m1-t5-s5", "title": "Vigenere cipher (Keyword repetition, Vigenere tableau, Kasiski method for key length discovery)", "priority": "HIGH", "order": 5},
+                                {"id": "cst433-m1-t5-s6", "title": "Hill cipher (Linear algebra matrix multiplication modulo 26, matrix invertibility requirement det(K) coprime to 26)", "priority": "VERY_HIGH", "order": 6}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m1-t6",
+                            "title": "Transposition ciphers",
+                            "description": "Permuting plaintext positions without substituting characters.",
+                            "priority": "VERY_HIGH",
+                            "order": 6,
+                            "subtopics": [
+                                {"id": "cst433-m1-t6-s1", "title": "Keyless transposition (Rail fence cipher zigzag writing and reconstruction)", "priority": "HIGH", "order": 1},
+                                {"id": "cst433-m1-t6-s2", "title": "Keyed transposition (Row-column columnar transposition with numeric key order)", "priority": "HIGH", "order": 2},
+                                {"id": "cst433-m1-t6-s3", "title": "Double transposition (Sequential rectangular columnar transposition for resistance to frequency anagramming)", "priority": "VERY_HIGH", "order": 3}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "cst433-m2",
+                    "moduleNumber": 2,
+                    "title": "Modern Symmetric Key Cryptosystems",
+                    "lectureHours": 9,
+                    "description": "Feistel structure, Data Encryption Standard (DES), 3DES, Advanced Encryption Standard (AES), block cipher modes (ECB, CBC, CFB, OFB, CTR), and RC4.",
+                    "topics": [
+                        {"id": "cst433-m2-t1", "title": "Symmetric key ciphers", "description": "Shared secret model, key space size, computational security versus unconditional security.", "priority": "MEDIUM", "order": 1, "subtopics": []},
+                        {"id": "cst433-m2-t2", "title": "Block ciphers vs Stream ciphers", "description": "Block processing (fixed n-bit blocks) vs continuous bit/byte keystream processing, error propagation characteristics.", "priority": "HIGH", "order": 2, "subtopics": []},
+                        {"id": "cst433-m2-t3", "title": "Block cipher components", "description": "S-boxes (non-linear substitution), P-boxes (permutation), XOR, key mixing, round functions.", "priority": "HIGH", "order": 3, "subtopics": []},
+                        {"id": "cst433-m2-t4", "title": "Product ciphers", "description": "Combining substitution, permutation, and arithmetic operations to achieve Shannon's confusion and diffusion.", "priority": "HIGH", "order": 4, "subtopics": []},
+                        {"id": "cst433-m2-t5", "title": "Feistel and Non-Feistel ciphers", "description": "Feistel network structure (left/right split, round function F, reversibility without inverting F) vs SPN substitution-permutation networks.", "priority": "VERY_HIGH", "order": 5, "subtopics": []},
+                        {
+                            "id": "cst433-m2-t6",
+                            "title": "Data Encryption Standard (DES)",
+                            "description": "64-bit block, 56-bit key Feistel cipher with 16 rounds.",
+                            "priority": "VERY_HIGH",
+                            "order": 6,
+                            "subtopics": [
+                                {"id": "cst433-m2-t6-s1", "title": "DES structure (Initial permutation IP, 16 Feistel rounds, 32-bit swap, inverse initial permutation IP-1)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m2-t6-s2", "title": "Key generation (64-bit key with 8 parity bits -> PC-1 56 bits -> 16 subkeys via circular left shifts and PC-2 48 bits)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst433-m2-t6-s3", "title": "Design criteria (S-box non-linearity, avalanche effect, strict avalanche criterion SAC)", "priority": "HIGH", "order": 3},
+                                {"id": "cst433-m2-t6-s4", "title": "Weaknesses (56-bit short key vulnerable to brute force, weak keys, semi-weak keys, complementation property)", "priority": "VERY_HIGH", "order": 4},
+                                {"id": "cst433-m2-t6-s5", "title": "Double DES (Meet-in-the-middle attack requiring 2^57 operations, why double encryption fails to double security)", "priority": "VERY_HIGH", "order": 5},
+                                {"id": "cst433-m2-t6-s6", "title": "Triple DES (3DES with two or three keys, EDE encrypt-decrypt-encrypt mode, effective 112 or 168-bit security)", "priority": "HIGH", "order": 6}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m2-t7",
+                            "title": "Advanced Encryption Standard (AES)",
+                            "description": "Rijndael SPN cipher with 128-bit block and 128/192/256-bit keys.",
+                            "priority": "VERY_HIGH",
+                            "order": 7,
+                            "subtopics": [
+                                {"id": "cst433-m2-t7-s1", "title": "Overall structure (128-bit 4x4 state matrix, 10 rounds for 128-bit key, round architecture)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m2-t7-s2", "title": "Stages of encryption and decryption (SubBytes byte substitution in GF(2^8), ShiftRows circular shifts, MixColumns matrix multiplication in GF(2^8), AddRoundKey XOR, and inverse stages)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst433-m2-t7-s3", "title": "Key expansion (Generating 44 32-bit words for 10 rounds, RotWord, SubWord, Rcon round constants)", "priority": "VERY_HIGH", "order": 3}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m2-t8",
+                            "title": "Block cipher modes of operation",
+                            "description": "Techniques to encrypt sequences of data blocks larger than cipher block size.",
+                            "priority": "VERY_HIGH",
+                            "order": 8,
+                            "subtopics": [
+                                {"id": "cst433-m2-t8-s1", "title": "Electronic Codebook Mode (ECB) (Independent block encryption, pattern leakage flaw)", "priority": "HIGH", "order": 1},
+                                {"id": "cst433-m2-t8-s2", "title": "Cipher Block Chaining Mode (CBC) (IV initialization vector, XOR with previous ciphertext, error propagation)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst433-m2-t8-s3", "title": "Cipher Feedback Mode (CFB) (Converts block cipher into self-synchronizing stream cipher, shift register)", "priority": "HIGH", "order": 3},
+                                {"id": "cst433-m2-t8-s4", "title": "Output Feedback Mode (OFB) (Synchronous stream cipher, keystream generation, no error propagation in plaintext)", "priority": "HIGH", "order": 4},
+                                {"id": "cst433-m2-t8-s5", "title": "Counter Mode (CTR) (Incrementing counter encryption, parallel encryption/decryption, random access)", "priority": "VERY_HIGH", "order": 5}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m2-t9",
+                            "title": "Stream ciphers",
+                            "description": "Pseudorandom keystream generator XORed with plaintext bitwise.",
+                            "priority": "HIGH",
+                            "order": 9,
+                            "subtopics": [
+                                {"id": "cst433-m2-t9-s1", "title": "Stream cipher structure (Keystream generator state, period length, randomness criteria)", "priority": "HIGH", "order": 1},
+                                {"id": "cst433-m2-t9-s2", "title": "RC4 algorithm (Key Scheduling Algorithm KSA for S[0..255] permutation, Pseudo-Random Generation Algorithm PRGA)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "cst433-m3",
+                    "moduleNumber": 3,
+                    "title": "Public Key Cryptosystems",
+                    "lectureHours": 7,
+                    "description": "Asymmetric cryptography, RSA, ElGamal, Diffie-Hellman key exchange, and Elliptic Curve Cryptography (ECC).",
+                    "topics": [
+                        {"id": "cst433-m3-t1", "title": "Introduction to public key cryptosystems", "description": "Asymmetric key pairs (public encryption key, private decryption key), solving symmetric key distribution.", "priority": "HIGH", "order": 1, "subtopics": []},
+                        {"id": "cst433-m3-t2", "title": "Principles of public key cryptosystems", "description": "One-way trapdoor functions, mathematical hardness problems, computational infeasibility of key derivation.", "priority": "HIGH", "order": 2, "subtopics": []},
+                        {"id": "cst433-m3-t3", "title": "Applications", "description": "Encryption/decryption (confidentiality), digital signatures (authenticity), and key exchange.", "priority": "MEDIUM", "order": 3, "subtopics": []},
+                        {"id": "cst433-m3-t4", "title": "Requirements", "description": "Diffie and Hellman conditions for secure public-key systems.", "priority": "MEDIUM", "order": 4, "subtopics": []},
+                        {"id": "cst433-m3-t5", "title": "Conventional vs Public Key Cryptosystems", "description": "Comparison of secret key size, computational speed, key distribution scalability, and security properties.", "priority": "HIGH", "order": 5, "subtopics": []},
+                        {
+                            "id": "cst433-m3-t6",
+                            "title": "RSA Cryptosystem",
+                            "description": "Rivest-Shamir-Adleman algorithm based on integer factorization problem.",
+                            "priority": "VERY_HIGH",
+                            "order": 6,
+                            "subtopics": [
+                                {"id": "cst433-m3-t6-s1", "title": "RSA algorithm (Prime generation p and q, modulus n=pq, Euler totient phi(n)=(p-1)(q-1), public exponent e with gcd(e, phi(n))=1, private exponent d = e^-1 mod phi(n), encryption C=M^e mod n, decryption M=C^d mod n)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m3-t6-s2", "title": "RSA security (Mathematical factoring attacks, chosen-ciphertext attacks, OAEP padding requirement)", "priority": "HIGH", "order": 2},
+                                {"id": "cst433-m3-t6-s3", "title": "Attacks on RSA (Factoring n, computing phi(n), timing attacks, common modulus attacks)", "priority": "HIGH", "order": 3}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m3-t7",
+                            "title": "ElGamal Cryptosystem",
+                            "description": "Asymmetric cipher based on Discrete Logarithm Problem (DLP).",
+                            "priority": "VERY_HIGH",
+                            "order": 7,
+                            "subtopics": [
+                                {"id": "cst433-m3-t7-s1", "title": "ElGamal algorithm (Prime q, primitive root alpha, private key XA, public key YA = alpha^XA mod q, ephemeral key k, ciphertext pair (C1, C2), decryption M = C2*(C1^XA)^-1 mod q)", "priority": "VERY_HIGH", "order": 1}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m3-t8",
+                            "title": "Diffie-Hellman Key Exchange",
+                            "description": "Establishing shared secret over insecure communication channel.",
+                            "priority": "VERY_HIGH",
+                            "order": 8,
+                            "subtopics": [
+                                {"id": "cst433-m3-t8-s1", "title": "Algorithm (Global parameters prime q and primitive root alpha, private keys XA and XB, public values YA=alpha^XA mod q and YB=alpha^XB mod q, shared secret K = YB^XA mod q = YA^XB mod q)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m3-t8-s2", "title": "Man-in-the-middle attack (Active interception of public exchange, need for authenticated key exchange / certificates)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m3-t9",
+                            "title": "Elliptic Curve Cryptography (ECC)",
+                            "description": "Public key cryptography using abelian group of points on elliptic curves y^2 = x^3 + ax + b mod p.",
+                            "priority": "VERY_HIGH",
+                            "order": 9,
+                            "subtopics": [
+                                {"id": "cst433-m3-t9-s1", "title": "ElGamal ECC (Point addition, point doubling, base point G, private key n, public point P=nG, encryption and decryption)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m3-t9-s2", "title": "Key exchange using ECC (ECDH Elliptic Curve Diffie-Hellman, equal security with much smaller key lengths compared to RSA)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "cst433-m4",
+                    "moduleNumber": 4,
+                    "title": "Message Integrity and Authentication",
+                    "lectureHours": 6,
+                    "description": "Cryptographic hash functions, SHA-512, Message Authentication Codes (HMAC, CMAC), digital signatures (RSA, ElGamal, DSS).",
+                    "topics": [
+                        {
+                            "id": "cst433-m4-t1",
+                            "title": "Hash functions",
+                            "description": "One-way compression functions mapping variable-length messages to fixed-length digests.",
+                            "priority": "VERY_HIGH",
+                            "order": 1,
+                            "subtopics": [
+                                {"id": "cst433-m4-t1-s1", "title": "Security requirements (Preimage resistance / one-way, Second preimage resistance / weak collision, Collision resistance / strong collision, Birthday paradox attack on n/2 bits)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m4-t1-s2", "title": "Secure Hash Algorithm (SHA-512) (Message padding to multiple of 1024 bits, 80-round compression function, 64-bit words, step architecture, round constant addition)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m4-t2",
+                            "title": "Message Authentication Code (MAC)",
+                            "description": "Keyed authentication tags verifying message integrity and source identity.",
+                            "priority": "VERY_HIGH",
+                            "order": 2,
+                            "subtopics": [
+                                {"id": "cst433-m4-t2-s1", "title": "Requirements (Resistance against forgery without knowledge of secret key K)", "priority": "HIGH", "order": 1},
+                                {"id": "cst433-m4-t2-s2", "title": "Uses (Message integrity, sender authenticity, authentication tied to encryption)", "priority": "HIGH", "order": 2},
+                                {"id": "cst433-m4-t2-s3", "title": "Hash-based MAC (HMAC) (Structure: HMAC_K(M) = H((K+ XOR opad) || H((K+ XOR ipad) || M)), security proof, design goals)", "priority": "VERY_HIGH", "order": 3},
+                                {"id": "cst433-m4-t2-s4", "title": "Cipher-based MAC (CMAC) (NIST SP 800-38B, CBC-MAC modification with subkeys K1 and K2 for arbitrary-length messages)", "priority": "VERY_HIGH", "order": 4}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m4-t3",
+                            "title": "Digital signatures",
+                            "description": "Non-repudiable asymmetric authentication mechanisms.",
+                            "priority": "VERY_HIGH",
+                            "order": 3,
+                            "subtopics": [
+                                {"id": "cst433-m4-t3-s1", "title": "Attacks on digital signatures (Total break, selective forgery, existential forgery)", "priority": "HIGH", "order": 1},
+                                {"id": "cst433-m4-t3-s2", "title": "Digital signature forgeries (Known-message and chosen-message attacks)", "priority": "HIGH", "order": 2},
+                                {"id": "cst433-m4-t3-s3", "title": "Requirements (Signature verification using public key, impossible to forge without private key, timestamping to prevent replay)", "priority": "HIGH", "order": 3},
+                                {"id": "cst433-m4-t3-s4", "title": "Direct digital signatures (Direct sender-to-recipient signing, vulnerability to compromised private key and validity repudiation)", "priority": "HIGH", "order": 4},
+                                {"id": "cst433-m4-t3-s5", "title": "Arbitrated digital signatures (Involving trusted arbitrator / timestamping authority TTP)", "priority": "VERY_HIGH", "order": 5},
+                                {"id": "cst433-m4-t3-s6", "title": "RSA digital signature (Signing S = M^d mod n, verification M = S^e mod n with cryptographic hash formatting)", "priority": "VERY_HIGH", "order": 6},
+                                {"id": "cst433-m4-t3-s7", "title": "ElGamal digital signature (Signing using ephemeral secret k with gcd(k, q-1)=1, signature pair (S1, S2), verification condition)", "priority": "VERY_HIGH", "order": 7},
+                                {"id": "cst433-m4-t3-s8", "title": "Digital Signature Standard (DSS / DSA) (FIPS PUB 186, SHA hashing with DSA algorithm, modular reduction mod p and mod q)", "priority": "VERY_HIGH", "order": 8}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "cst433-m5",
+                    "moduleNumber": 5,
+                    "title": "Key Distribution and System Security",
+                    "lectureHours": 7,
+                    "description": "Key management, symmetric/asymmetric key distribution, X.509 certificates, Intrusion Detection Systems (IDS), malware types & defenses, and DDoS attacks & countermeasures.",
+                    "topics": [
+                        {"id": "cst433-m5-t1", "title": "Key management", "description": "Key lifecycle, generation, storage, distribution, revocation, and hierarchical master/session keys.", "priority": "HIGH", "order": 1, "subtopics": []},
+                        {
+                            "id": "cst433-m5-t2",
+                            "title": "Distribution of secret keys",
+                            "description": "Establishing symmetric keys securely between end entities.",
+                            "priority": "VERY_HIGH",
+                            "order": 2,
+                            "subtopics": [
+                                {"id": "cst433-m5-t2-s1", "title": "Using symmetric encryption (Key Distribution Center KDC, Needham-Schroeder protocol, Kerberos tickets)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m5-t2-s2", "title": "Using asymmetric encryption (Public-key session key distribution, nonce exchanges against replay)", "priority": "HIGH", "order": 2}
+                            ]
+                        },
+                        {"id": "cst433-m5-t3", "title": "Distribution of public keys", "description": "Public announcement, publicly available directory, public-key authority (PKA), and Public-Key Certificates (CA, X.509 format).", "priority": "VERY_HIGH", "order": 3, "subtopics": []},
+                        {
+                            "id": "cst433-m5-t4",
+                            "title": "System security",
+                            "description": "Host and network defenses against unauthorized intrusion.",
+                            "priority": "VERY_HIGH",
+                            "order": 4,
+                            "subtopics": [
+                                {"id": "cst433-m5-t4-s1", "title": "Intruders (Classes: masquerader, misfeasor, clandestine user; intruder patterns)", "priority": "HIGH", "order": 1},
+                                {"id": "cst433-m5-t4-s2", "title": "Intrusion detection techniques (Statistical anomaly detection, rule-based / signature-based detection, HIDS vs NIDS, honeypots)", "priority": "VERY_HIGH", "order": 2},
+                                {"id": "cst433-m5-t4-s3", "title": "Password management (Password vulnerabilities, password salts, hashing with salt, password aging, proactive password checking)", "priority": "HIGH", "order": 3}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m5-t5",
+                            "title": "Malicious software",
+                            "description": "Taxonomy of computer viruses, worms, and countermeasures.",
+                            "priority": "VERY_HIGH",
+                            "order": 5,
+                            "subtopics": [
+                                {"id": "cst433-m5-t5-s1", "title": "Viruses (Virus phases: dormant, propagation, triggering, execution; virus classification: boot sector, file infector, macro, polymorphic, metamorphic)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m5-t5-s2", "title": "Related threats (Worms, trojan horses, spyware, ransomware, keyloggers, rootkits, botnets)", "priority": "HIGH", "order": 2},
+                                {"id": "cst433-m5-t5-s3", "title": "Countermeasures (First to fourth generation antivirus techniques, heuristic scanning, behavioral blocking, sandboxing)", "priority": "HIGH", "order": 3}
+                            ]
+                        },
+                        {
+                            "id": "cst433-m5-t6",
+                            "title": "Distributed Denial of Service (DDoS) attacks",
+                            "description": "Attacking system availability through coordinated zombie botnets.",
+                            "priority": "VERY_HIGH",
+                            "order": 6,
+                            "subtopics": [
+                                {"id": "cst433-m5-t6-s1", "title": "Types of DDoS attacks (Volumetric attacks: UDP/ICMP floods, amplified DNS/NTP reflection; Protocol attacks: SYN flood, Ping of Death; Application-layer attacks: HTTP GET/POST floods, Slowloris)", "priority": "VERY_HIGH", "order": 1},
+                                {"id": "cst433-m5-t6-s2", "title": "Countermeasures (Attack prevention: filtering spoofed IP, egress filtering; Attack detection: anomaly monitoring; Attack response: rate limiting, blackholing, traffic scrubbers, Anycast routing)", "priority": "VERY_HIGH", "order": 2}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+
+os.makedirs('src/data', exist_ok=True)
+with open('src/data/officialSyllabus.json', 'w', encoding='utf-8') as f:
+    json.dump(syllabus_data, f, indent=2)
+
+print('Successfully created src/data/officialSyllabus.json with all 3 subjects and 15 modules!')

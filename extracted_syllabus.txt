@@ -1,0 +1,350 @@
+=== PAGE 1 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  1
+KTU B.Tech S7 | Complete Module-wise Syllabus
+2019 Scheme  •  CSE Semester 7  •  AI + BMI + SIC
+Shareable study checklist compiled from the module-wise syllabus in the preceding 
+conversation. Includes detailed teaching-plan subtopics.
+Subjects at a glance
+Subject Course code Category
+Artificial Intelligence (Ai) CST401 Core
+Biomedical Instrumentation 
+(Bmi)
+ECT425 Open Elective
+Security In Computing (Sic) CST433 Programme Elective
+This document includes 5 modules per subject (15 modules total), source links and the exam pattern 
+described in the course documents.
+
+=== PAGE 2 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  2
+1. ARTIFICIAL INTELLIGENCE (AI)
+CST401  |  Core  |  36 lecture hours
+Module 1 - Introduction to Artificial Intelligence
+7 lecture hours
+1. Introduction to Artificial Intelligence
+2. What is Artificial Intelligence (AI)?
+3. Foundations of AI
+4. History of Artificial Intelligence
+5. Applications of Artificial Intelligence
+6. Intelligent Agents
+•  Agents and environments
+•  Good behaviour of agents
+•  Concept of rationality
+•  Rational agents
+•  Nature of environments
+•  Structure of agents
+Module 2 - Problem Solving by Searching
+7 lecture hours
+1. Solving problems by searching
+2. Problem-solving agents
+3. Example problems
+4. Illustration of the problem-solving process by agents
+5. Searching for solutions
+6. Uninformed search strategies
+•  Breadth-First Search (BFS)
+•  Uniform-Cost Search (UCS)
+•  Depth-First Search (DFS)
+•  Depth-Limited Search (DLS)
+•  Iterative Deepening Depth-First Search (IDDFS)
+7. Informed search strategies
+•  Best-First Search
+•  A* Search
+8. Heuristic functions
+Module 3 - Search in Complex Environments
+7 lecture hours
+1. Adversarial Search
+•  Games
+•  Optimal decisions in games
+
+=== PAGE 3 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  3
+•  Minimax algorithm
+•  Alpha-Beta Pruning
+2. Constraint Satisfaction Problems (CSP)
+•  Defining CSP
+•  Constraint propagation
+•  Inference in CSPs
+•  Backtracking search for CSPs
+•  Structure of CSP problems
+Module 4 - Knowledge Representation and Reasoning
+9 lecture hours
+1. Logical Agents
+•  Knowledge-based agents
+•  Logic
+2. Propositional Logic
+•  Propositional logic
+•  Propositional theorem proving
+•  Agents based on propositional logic
+3. First-Order Predicate Logic
+•  Syntax of First-Order Logic
+•  Semantics of First-Order Logic
+•  Using First-Order Logic
+•  Knowledge representation in First-Order Logic
+4. Inference in First-Order Logic
+•  Propositional vs First-Order inference
+•  Unification
+•  Lifting
+•  Forward chaining
+•  Backward chaining
+•  Resolution
+Module 5 - Machine Learning
+6 lecture hours
+1. Learning from examples
+2. Forms of learning
+3. Supervised learning
+4. Learning decision trees
+5. Generalization and overfitting
+6. Evaluating and choosing the best hypothesis
+7. Regression and classification with linear models
+Prescribed textbook: Stuart Russell and Peter Norvig, Artificial Intelligence: A Modern Approach (3rd 
+edition).
+
+=== PAGE 4 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  4
+2. BIOMEDICAL INSTRUMENTATION (BMI)
+ECT425  |  Open Elective  |  5 modules
+Module 1 - Introduction to Human Physiological System
+1. Physiological systems of the human body
+2. Heart and cardiovascular system
+3. Anatomy of the nervous system
+4. Physiology of the respiratory system
+5. Problems encountered in biomedical measurements
+6. Sources of bioelectric potentials
+7. Resting potential
+8. Action potential
+9. Propagation of action potentials
+10. Examples of bioelectric potentials
+•  Electrocardiogram (ECG)
+•  Electroencephalogram (EEG)
+•  Electromyogram (EMG)
+•  Electroretinogram (ERG)
+•  Electrooculogram (EOG)
+•  Electrogastrogram (EGG)
+Module 2 - Biopotential Electrodes and ECG
+1. Biopotential electrodes
+2. Basic theory of electrodes
+3. Microelectrodes
+4. Skin surface electrodes
+5. Needle electrodes
+6. Biochemical transducers
+7. Transducers for biomedical applications
+8. Instrumentation for clinical laboratories
+9. Biopotential amplifiers
+•  Instrumentation amplifiers
+•  Isolation amplifiers
+•  Chopper amplifiers
+10. Electrical conduction system of the heart
+11. Electrocardiograph
+12. ECG electrodes and leads
+13. Einthoven's triangle
+14. ECG readout devices
+
+=== PAGE 5 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  5
+15. ECG machine - block diagram
+Module 3 - Measurement of Blood Pressure, Blood Flow and Heart Sound
+1. Measurement of blood pressure
+2. Direct blood pressure measurement
+3. Indirect blood pressure measurement
+4. Oscillometric measurement method
+5. Ultrasonic method of blood pressure measurement
+6. Measurement of blood flow
+7. Measurement of cardiac output
+8. Plethysmography
+•  Photoelectric plethysmography
+•  Impedance plethysmography
+9. Measurement of heart sounds
+10. Phonocardiography
+Module 4 - Measurement of EEG, EMG and Respiratory Parameters; Therapeutic Aid
+1. Electroencephalogram (EEG)
+•  Neuronal communication
+•  EEG measurement
+•  EEG recording
+•  EEG analysis
+2. Electromyogram (EMG)
+•  Muscle response
+•  Nerve conduction velocity measurements
+•  EMG measurements
+3. Respiratory parameters
+•  Spirometer
+•  Pneumograph
+4. Therapeutic aids
+•  Cardiac pacemakers
+•  Internal pacemakers
+•  External pacemakers
+•  Defibrillators
+•  Ventilators
+•  Heart-lung machine
+•  Hemodialysis
+•  Lithotripsy
+•  Infant incubators
+Module 5 - Advances in Radiological Imaging and Electrical Safety
+1. X-rays
+
+=== PAGE 6 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  6
+•  Principles of X-ray generation
+•  Uses of X-rays
+•  Diagnostic still-picture imaging
+•  Fluoroscopy
+•  Angiography
+•  Endoscopy
+•  Diathermy
+2. Computed Tomography (CT)
+•  Basic principle
+3. Magnetic Resonance Imaging (MRI)
+•  Basic principle of MRI systems
+4. Nuclear medicine systems
+5. Radiation therapy
+6. Ultrasonic imaging systems
+•  Introduction
+•  Basic working principle
+7. Electrical safety
+•  Physiological effects of electric current
+•  Shock hazards from electrical equipment
+•  Methods of accident prevention
+8. Introduction to telemedicine
+Prescribed textbook: J. G. Webster, Medical Instrumentation: Application and Design.
+
+=== PAGE 7 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  7
+3. SECURITY IN COMPUTING (SIC)
+CST433  |  Programme Elective  |  35 lecture hours
+Module 1 - Basics of Security and Traditional Cryptosystems
+6 lecture hours
+1. OSI Security Architecture
+•  Security attacks
+•  Security services
+•  Security mechanisms
+2. Cryptography vs Cryptanalysis
+3. Classical encryption techniques
+4. Symmetric cipher model
+5. Substitution ciphers
+•  Monoalphabetic vs Polyalphabetic ciphers
+•  Caesar cipher
+•  Affine cipher
+•  Playfair cipher
+•  Vigenere cipher
+•  Hill cipher
+6. Transposition ciphers
+•  Keyless transposition
+•  Keyed transposition
+•  Double transposition
+Module 2 - Modern Symmetric Key Cryptosystems
+9 lecture hours
+1. Symmetric key ciphers
+2. Block ciphers vs Stream ciphers
+3. Block cipher components
+4. Product ciphers
+5. Feistel and Non-Feistel ciphers
+6. Data Encryption Standard (DES)
+•  DES structure
+•  Key generation
+•  Design criteria
+•  Weaknesses
+•  Double DES
+•  Triple DES
+7. Advanced Encryption Standard (AES)
+•  Overall structure
+•  Stages of encryption and decryption
+
+=== PAGE 8 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  8
+•  Key expansion
+8. Block cipher modes of operation
+•  Electronic Codebook Mode (ECB)
+•  Cipher Block Chaining Mode (CBC)
+•  Cipher Feedback Mode (CFB)
+•  Output Feedback Mode (OFB)
+•  Counter Mode (CTR)
+9. Stream ciphers
+•  Stream cipher structure
+•  RC4 algorithm
+Module 3 - Public Key Cryptosystems
+7 lecture hours
+1. Introduction to public key cryptosystems
+2. Principles of public key cryptosystems
+3. Applications
+4. Requirements
+5. Conventional vs Public Key Cryptosystems
+6. RSA Cryptosystem
+•  RSA algorithm
+•  RSA security
+•  Attacks on RSA
+7. ElGamal Cryptosystem
+•  ElGamal algorithm
+8. Diffie-Hellman Key Exchange
+•  Algorithm
+•  Man-in-the-middle attack
+9. Elliptic Curve Cryptography (ECC)
+•  ElGamal ECC
+•  Key exchange using ECC
+Module 4 - Message Integrity and Authentication
+6 lecture hours
+1. Hash functions
+•  Security requirements
+•  Secure Hash Algorithm (SHA-512)
+2. Message Authentication Code (MAC)
+•  Requirements
+•  Uses
+•  Hash-based MAC (HMAC)
+•  Cipher-based MAC (CMAC)
+3. Digital signatures
+
+=== PAGE 9 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  9
+•  Attacks on digital signatures
+•  Digital signature forgeries
+•  Requirements
+•  Direct digital signatures
+•  Arbitrated digital signatures
+•  RSA digital signature
+•  ElGamal digital signature
+•  Digital Signature Standard (DSS)
+Module 5 - Key Distribution and System Security
+7 lecture hours
+1. Key management
+2. Distribution of secret keys
+•  Using symmetric encryption
+•  Using asymmetric encryption
+3. Distribution of public keys
+4. System security
+•  Intruders
+•  Intrusion detection techniques
+•  Password management
+5. Malicious software
+•  Viruses
+•  Related threats
+•  Countermeasures
+6. Distributed Denial of Service (DDoS) attacks
+•  Types of DDoS attacks
+•  Countermeasures
+Exam pattern
+Section Structure Marks
+Part A 10 compulsory questions; 2 from 
+each module; 3 marks each
+30
+Part B One question from each module 
+(choice of two); 14 marks/module
+70
+Total 3-hour examination 100
+Topics commonly omitted in abbreviated notes
+AI: Uniform-cost search, iterative deepening, CSP structure, unification and lifting, generalization and 
+overfitting.
+BMI: Biopotential amplifiers, cardiac output, impedance plethysmography, nerve conduction velocity, 
+lithotripsy, nuclear medicine, telemedicine.
+
+=== PAGE 10 ===
+KTU S7 • 2019 Scheme • AI | BMI | SIC  •  10
+SIC: Affine cipher, double transposition, AES key expansion, ECC key exchange, CMAC, arbitrated digital 
+signatures, DDoS countermeasures.
+Reference syllabus documents
+KTU CSE S7 2019 Scheme (AI and SIC): 
+https://www.vidyaacademy.ac.in/pdf/2019/syllabus/2019/CSE/KTU_BTech_CSE_2019scheme_2019Scheme-
+S7_2019_Syllabus.pdf
+KTU ECE S7 2019 Scheme (BMI): 
+https://vidyaacademy.ac.in/pdf/2019/syllabus/2019/ECE/KTU_BTech_ECE_2019scheme_2019Scheme-
+S7_2019_Syllabus.pdf
+Note: This is a formatted study checklist based on the preceding syllabus compilation, not a university-
+issued syllabus document. Consult the university syllabus PDFs if any examination notification supersedes 
+the 2019 scheme.
+
