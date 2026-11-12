@@ -403,6 +403,17 @@ export const localDb = {
     return getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
   },
 
+  syncProfileFromCloud(cloudProfile: UserProfile): void {
+    const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
+    const idx = profiles.findIndex((p) => p.id === cloudProfile.id || p.username.toLowerCase() === cloudProfile.username.toLowerCase());
+    if (idx >= 0) {
+      profiles[idx] = { ...profiles[idx], ...cloudProfile };
+    } else {
+      profiles.push(cloudProfile);
+    }
+    setTable(STORAGE_KEYS.PROFILES, profiles);
+  },
+
   registerUser(user: { email: string; username: string; displayName: string; role?: 'super_admin' | 'admin' | 'user' }): UserProfile {
     const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
     

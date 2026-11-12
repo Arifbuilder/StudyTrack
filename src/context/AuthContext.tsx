@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { UserProfile, UserSettings, UserRole } from '../types';
 import { api } from '../services/api';
 import { localDb, realtimeChannel } from '../services/localDatabase';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -53,19 +54,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     loadCurrentUser();
 
-    // Listen to realtime user deletion or updates
+    // 1. Same-device multi-tab sync
     const channel = realtimeChannel;
+    let localHandler: ((e: MessageEvent) => void) | null = null;
     if (channel) {
-      const handleMessage = (e: MessageEvent) => {
+      localHandler = (e: MessageEvent) => {
         if (e.data?.type === 'USER_DELETED' || e.data?.type === 'PROGRESS_UPDATED') {
           loadCurrentUser();
         }
       };
-      channel.addEventListener('message', handleMessage);
-      return () => {
-        channel.removeEventListener('message', handleMessage);
-      };
+      channel.addEventListener('message', localHandler);
     }
+
+    // 2. Cross-device Cloud Realtime Subscription for profiles
+    let supabaseSub: any = null;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        supabaseSub = supabase
+          .channel('public:profiles')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'profiles' },
+            () => {
+              loadCurrentUser();
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('[Supabase Realtime Profiles] error:', err);
+      }
+    }
+
+    return () => {
+      if (channel && localHandler) {
+        channel.removeEventListener('message', localHandler);
+      }
+      if (supabaseSub && supabase) {
+        supabase.removeChannel(supabaseSub);
+      }
+    };
   }, [loadCurrentUser]);
 
   const setTheme = (newTheme: 'light' | 'dark') => {

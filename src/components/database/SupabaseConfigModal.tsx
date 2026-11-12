@@ -24,6 +24,7 @@ import {
   testSupabaseConnection,
 } from '../../services/supabase';
 import initSchemaSql from '../../../supabase/migrations/20261112_init_schema.sql?raw';
+import crossDeviceSyncSql from '../../../supabase/migrations/20261112_enable_cross_device_sync.sql?raw';
 
 interface SupabaseConfigModalProps {
   isOpen: boolean;
@@ -51,12 +52,19 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   });
   const [copiedSchema, setCopiedSchema] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
+  const [copiedCrossDeviceSql, setCopiedCrossDeviceSql] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleCopySql = () => {
     navigator.clipboard.writeText(initSchemaSql);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2500);
+  };
+
+  const handleCopyCrossDeviceSql = () => {
+    navigator.clipboard.writeText(crossDeviceSyncSql);
+    setCopiedCrossDeviceSql(true);
+    setTimeout(() => setCopiedCrossDeviceSql(false), 2500);
   };
 
   useEffect(() => {
@@ -245,6 +253,32 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 Save & Connect
               </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Desktop ↔ Mobile Realtime Sync Banner */}
+        <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-xs text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              Desktop ↔ Mobile Realtime Sync Fix
+            </span>
+            <Badge variant="primary" size="sm">Realtime Sync</Badge>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Want your checked topics to sync instantly between your desktop and mobile phone? Copy this SQL query and execute it in your Supabase SQL Editor.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleCopyCrossDeviceSql}
+              className="flex-1 justify-center bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {copiedCrossDeviceSql ? <Check className="w-4 h-4 mr-1.5 text-emerald-300" /> : <Copy className="w-4 h-4 mr-1.5" />}
+              {copiedCrossDeviceSql ? 'Cross-Device Sync SQL Copied!' : 'Copy Cross-Device Sync SQL'}
+            </Button>
           </div>
         </div>
 

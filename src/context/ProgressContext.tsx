@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
 import { localDb, realtimeChannel } from '../services/localDatabase';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { Topic, OverallProgressSummary, UserTopicProgress } from '../types';
 import confetti from 'canvas-confetti';
 
@@ -75,19 +76,50 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     loadProgress();
 
-    // Listen to realtime progress updates from other tabs or friends
+    // 1. Same-device multi-tab BroadcastChannel
     const channel = realtimeChannel;
+    let localHandler: ((e: MessageEvent) => void) | null = null;
     if (channel) {
-      const handler = (e: MessageEvent) => {
+      localHandler = (e: MessageEvent) => {
         if (e.data?.type === 'PROGRESS_UPDATED') {
           loadProgress();
         }
       };
-      channel.addEventListener('message', handler);
-      return () => {
-        channel.removeEventListener('message', handler);
-      };
+      channel.addEventListener('message', localHandler);
     }
+
+    // 2. Cross-device Cloud Realtime Subscription (Desktop <-> Mobile)
+    let supabaseChannel: any = null;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        supabaseChannel = supabase
+          .channel('public:user_topic_progress')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_topic_progress',
+            },
+            (payload) => {
+              console.log('[Cloud Realtime Sync] Received progress update from another device:', payload);
+              loadProgress();
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('[Supabase Realtime] Subscription error:', err);
+      }
+    }
+
+    return () => {
+      if (channel && localHandler) {
+        channel.removeEventListener('message', localHandler);
+      }
+      if (supabaseChannel && supabase) {
+        supabase.removeChannel(supabaseChannel);
+      }
+    };
   }, [loadProgress]);
 
   // Overall summary calculated from real records

@@ -78,28 +78,47 @@ export const api = {
     },
 
     async register(data: { email: string; username: string; displayName: string; password?: string; role?: 'super_admin' | 'admin' | 'user' }): Promise<UserProfile> {
-      if (isSupabaseConfigured && supabase && data.password) {
+      const localUser = localDb.registerUser(data);
+
+      if (isSupabaseConfigured && supabase) {
         try {
-          const { data: authData, error } = await supabase.auth.signUp({
-            email: data.email,
-            password: data.password,
-            options: {
-              data: {
-                username: data.username,
-                display_name: data.displayName,
+          if (data.password) {
+            const { data: authData } = await supabase.auth.signUp({
+              email: data.email,
+              password: data.password,
+              options: {
+                data: {
+                  username: data.username,
+                  display_name: data.displayName,
+                },
               },
-            },
-          });
-          if (!error && authData?.user) {
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
-            if (profile) return profile as UserProfile;
+            });
+            if (authData?.user) {
+              localUser.id = authData.user.id;
+            }
           }
+
+          // Always upsert to public.profiles table so all devices see this student
+          await supabase.from('profiles').upsert({
+            id: localUser.id,
+            email: localUser.email,
+            username: localUser.username,
+            display_name: localUser.displayName,
+            avatar_url: localUser.avatarUrl,
+            university: localUser.university,
+            semester: localUser.semester,
+            college_name: localUser.collegeName,
+            study_goal: localUser.studyGoal,
+            role: localUser.role,
+            created_at: localUser.createdAt,
+            updated_at: new Date().toISOString(),
+          });
         } catch (e) {
           console.warn('[Supabase Register Fallback]', e);
         }
       }
 
-      return localDb.registerUser(data);
+      return localUser;
     },
 
     async signOut(): Promise<void> {
@@ -171,27 +190,61 @@ export const api = {
 
   // --- PROGRESS ---
   progress: {
-    getUserProgress(userId: string): UserTopicProgress[] {
+    async getUserProgress(userId: string): Promise<UserTopicProgress[]> {
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('user_topic_progress')
+            .select('*')
+            .eq('user_id', userId);
+          if (!error && data) {
+            const mapped: UserTopicProgress[] = data.map((d: any) => ({
+              id: d.id || `prog-${userId}-${d.topic_id}`,
+              userId: d.user_id,
+              topicId: d.topic_id,
+              isCompleted: Boolean(d.is_completed),
+              completedAt: d.completed_at,
+              revisionState: d.revision_state || 'not_started',
+              confidenceLevel: d.confidence_level || 0,
+              revisionCount: d.revision_count || 0,
+              lastRevisedAt: d.last_revised_at,
+              notes: d.notes,
+              updatedAt: d.updated_at,
+            }));
+            // Cache downloaded progress into localDb
+            mapped.forEach((item) => {
+              localDb.toggleTopicCompletion(userId, item.topicId, item.isCompleted);
+            });
+            return mapped;
+          }
+        } catch (e) {
+          console.warn('[Supabase getUserProgress Fallback]', e);
+        }
+      }
       return localDb.getUserProgress(userId);
     },
 
     async toggleTopic(userId: string, topicId: string, isCompleted: boolean): Promise<UserTopicProgress> {
+      const localResult = localDb.toggleTopicCompletion(userId, topicId, isCompleted);
       if (isSupabaseConfigured && supabase) {
         try {
           await supabase
             .from('user_topic_progress')
-            .upsert({
-              user_id: userId,
-              topic_id: topicId,
-              is_completed: isCompleted,
-              completed_at: isCompleted ? new Date().toISOString() : null,
-              updated_at: new Date().toISOString(),
-            });
+            .upsert(
+              {
+                user_id: userId,
+                topic_id: topicId,
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'user_id,topic_id' }
+            );
         } catch (err) {
           console.warn('[Supabase toggleTopic fallback to localDb]', err);
         }
       }
-      return localDb.toggleTopicCompletion(userId, topicId, isCompleted);
+      return localResult;
     },
 
     async updateRevision(
@@ -324,7 +377,36 @@ export const api = {
 
   // --- ADMINISTRATION & AUDIT ---
   admin: {
-    getAllUsers(): UserProfile[] {
+    async getAllUsers(): Promise<UserProfile[]> {
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data, error } = await supabase.from('profiles').select('*');
+          if (!error && data && data.length > 0) {
+            const mapped: UserProfile[] = data.map((d: any) => ({
+              id: d.id,
+              email: d.email || '',
+              username: d.username,
+              displayName: d.display_name,
+              avatarUrl: d.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.username}`,
+              bio: d.bio,
+              university: d.university || 'APJ Abdul Kalam Technological University (KTU)',
+              semester: d.semester || 'S7',
+              collegeName: d.college_name,
+              studyGoal: d.study_goal,
+              role: d.role || 'user',
+              createdAt: d.created_at || new Date().toISOString(),
+            }));
+            mapped.forEach((u) => {
+              try {
+                localDb.syncProfileFromCloud(u);
+              } catch (e) {}
+            });
+            return localDb.getAllUsers();
+          }
+        } catch (e) {
+          console.warn('[Supabase getAllUsers Fallback]', e);
+        }
+      }
       return localDb.getAllUsers();
     },
 
