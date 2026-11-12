@@ -1,547 +1,547 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 import {
-  Brain,
-  Sparkles,
-  TrendingUp,
+  Search,
   CheckCircle2,
-  Clock,
+  ChevronDown,
+  ChevronUp,
   Flame,
-  ArrowRight,
-  Plus,
-  Users,
-  AlertTriangle,
-  Award,
-  ChevronRight,
+  Sparkles,
   BookOpen,
+  Filter,
+  CheckSquare,
+  Square,
+  Clock,
+  Layers,
+  ArrowRight,
+  Database,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { CircularProgress } from '../components/ui/CircularProgress';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { Modal } from '../components/ui/Modal';
+import { Badge } from '../components/ui/Badge';
 import { api } from '../services/api';
 import officialSyllabus from '../data/officialSyllabus.json';
+import { Topic, Subtopic } from '../types';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
-  const { overallSummary, readiness } = useProgress();
+  const { overallSummary, isTopicCompleted, toggleTopic, getParentTopicStatus } = useProgress();
   const navigate = useNavigate();
 
-  const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskSubject, setTaskSubject] = useState('sub-cst401-ai');
-  const [taskDate, setTaskDate] = useState(new Date().toISOString().split('T')[0]);
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('all'); // 'all' | 'sub-cst401-ai' | 'sub-ect425-bmi' | 'sub-cst433-sic'
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'completed' | 'high_priority'>('all');
 
-  // Greeting based on local time
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  // Expanded Modules State (default expand first module of each or all)
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
+    'cst401-m1': true,
+    'ect425-m1': true,
+    'cst433-m1': true,
+  });
 
-  // Demo friends for live tracking widget
-  const friendsProgress = user ? api.friends.getFriends(user.id) : [];
+  const toggleModule = (moduleId: string) => {
+    setExpandedModules((prev) => ({ ...prev, [moduleId]: !prev[moduleId] }));
+  };
 
-  // Tasks
-  const tasks = user ? api.planner.getTasks(user.id).filter((t) => !t.isCompleted).slice(0, 4) : [];
-
-  const handleCreateTask = async () => {
-    if (!user || !taskTitle.trim()) return;
-    await api.planner.addTask({
-      userId: user.id,
-      title: taskTitle.trim(),
-      subjectId: taskSubject,
-      targetDate: taskDate,
-      priority: 'high',
+  const expandAll = () => {
+    const all: Record<string, boolean> = {};
+    officialSyllabus.subjects.forEach((s) => {
+      s.modules.forEach((m) => {
+        all[m.id] = true;
+      });
     });
-    setTaskTitle('');
-    setTaskModalOpen(false);
+    setExpandedModules(all);
   };
 
-  // Find first incomplete topic for "Continue Studying"
-  const getContinueTopic = (subjectId: string) => {
-    const subject = officialSyllabus.subjects.find((s) => s.id === subjectId);
-    if (!subject) return null;
-    const progressRecords = user ? api.progress.getUserProgress(user.id) : [];
-    const completedSet = new Set(
-      Array.isArray(progressRecords) ? progressRecords.filter((p) => p.isCompleted).map((p) => p.topicId) : []
-    );
+  const collapseAll = () => {
+    setExpandedModules({});
+  };
 
-    for (const mod of subject.modules) {
-      for (const top of mod.topics) {
-        if (top.subtopics && top.subtopics.length > 0) {
-          for (const st of top.subtopics) {
-            if (!completedSet.has(st.id)) {
-              return { module: mod, topic: top, subtopic: st };
+  // Filtered Subjects & Modules
+  const filteredSubjects = useMemo(() => {
+    return officialSyllabus.subjects
+      .filter((s) => selectedSubject === 'all' || s.id === selectedSubject)
+      .map((subject) => {
+        const filteredModules = subject.modules.map((mod) => {
+          const filteredTopics = mod.topics.filter((topic) => {
+            // Text search match
+            const matchesQuery =
+              !searchQuery.trim() ||
+              topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              topic.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              topic.subtopics?.some((st) => st.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+            if (!matchesQuery) return false;
+
+            // Status filter
+            const hasSub = topic.subtopics && topic.subtopics.length > 0;
+            const isCompleted = hasSub
+              ? getParentTopicStatus(topic as unknown as Topic) === 'completed'
+              : isTopicCompleted(topic.id);
+
+            if (filterStatus === 'completed') return isCompleted;
+            if (filterStatus === 'pending') return !isCompleted;
+            if (filterStatus === 'high_priority') {
+              return (
+                topic.priority === 'VERY_HIGH' ||
+                topic.priority === 'HIGH' ||
+                topic.subtopics?.some((st) => st.priority === 'VERY_HIGH' || st.priority === 'HIGH')
+              );
             }
-          }
-        } else {
-          if (!completedSet.has(top.id)) {
-            return { module: mod, topic: top };
-          }
-        }
-      }
+
+            return true;
+          });
+
+          return { ...mod, topics: filteredTopics };
+        });
+
+        return { ...subject, modules: filteredModules };
+      });
+  }, [selectedSubject, searchQuery, filterStatus, isTopicCompleted, getParentTopicStatus]);
+
+  // AI Study Insight calculation
+  const aiInsight = useMemo(() => {
+    const totalDone = overallSummary.completedLeafCount;
+    if (totalDone === 0) {
+      return {
+        title: 'Start Here for Maximum KTU Marks',
+        tip: 'Begin with CST401 Module 2 (Search: BFS, DFS, A*) or CST433 Module 2 (AES & Block Ciphers). These two modules carry 28+ marks in Part B university examinations.',
+      };
     }
-    return null;
-  };
+    if (totalDone < 30) {
+      return {
+        title: 'High-Yield Momentum',
+        tip: 'Make sure you master the compulsory 14-mark diagrams: ECG Driven Right Leg (ECT425 Module 2) and Pacemaker Block Circuitry (ECT425 Module 4).',
+      };
+    }
+    return {
+      title: 'Revision & PYQ Polish',
+      tip: 'You have solid coverage! Focus on repeated KTU Part A 3-mark definitions (PEAS, CIA Triad, Action Potentials) to secure full marks in Part A.',
+    };
+  }, [overallSummary.completedLeafCount]);
+
+  // Frequently repeated PYQ highlights
+  const topRepeatedPYQs = [
+    { title: 'A* Search optimality & admissible heuristic proof', subject: 'CST401 (AI)', marks: '14 Marks', repeat: '3x Repeated' },
+    { title: 'AES Round Stages: SubBytes, ShiftRows, MixColumns', subject: 'CST433 (SIC)', marks: '14 Marks', repeat: '3x Repeated' },
+    { title: 'ECG Machine Block Diagram with Driven Right Leg (DRL)', subject: 'ECT425 (BMI)', marks: '14 Marks', repeat: '2x Repeated' },
+    { title: 'Alpha-Beta Pruning algorithm with game tree example', subject: 'CST401 (AI)', marks: '14 Marks', repeat: '2x Repeated' },
+  ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Welcome Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-indigo-900/90 via-indigo-800 to-violet-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
-        <div className="relative z-10 space-y-2 max-w-xl">
-          <div className="flex items-center gap-2">
-            <Badge variant="primary" size="sm" className="bg-white/10 text-white border-white/20">
-              KTU B.Tech S7 • 2019 Scheme
-            </Badge>
-            <span className="text-xs text-indigo-200">Dec 2024 / Jan 2025 Exams</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {greeting}, {user?.displayName?.split(' ')[0] || 'Scholar'}!
-          </h1>
-          <p className="text-sm text-indigo-200 leading-relaxed">
-            Ready to make solid progress? You have completed{' '}
-            <strong className="text-white font-bold">{overallSummary.completedLeafCount}</strong> of{' '}
-            <strong className="text-white font-bold">{overallSummary.totalLeafCount}</strong> syllabus topics.
-          </p>
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => navigate('/subjects')}
-              className="bg-white text-indigo-900 hover:bg-slate-100 shadow-md font-semibold"
-            >
-              <BookOpen className="w-4 h-4 mr-1.5" />
-              Open Syllabus Checklist
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTaskModalOpen(true)}
-              className="text-white border-white/30 hover:bg-white/10"
-            >
-              <Plus className="w-4 h-4 mr-1.5" />
-              Add Today's Goal
-            </Button>
-          </div>
-        </div>
-
-        {/* Circular Progress in Header */}
-        <div className="relative z-10 flex items-center justify-center shrink-0 self-center">
-          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 flex flex-col items-center">
-            <CircularProgress
-              value={overallSummary.percentage}
-              size={130}
-              strokeWidth={10}
-              color="#ffffff"
-            >
-              <span className="text-3xl font-black text-white">{overallSummary.percentage}%</span>
-              <span className="text-[10px] uppercase font-bold text-indigo-200 tracking-wider">Overall</span>
-            </CircularProgress>
-          </div>
-        </div>
-
-        {/* Decorative background glow */}
-        <div className="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-violet-500/20 blur-3xl pointer-events-none" />
-      </div>
-
-      {/* Primary 3-Subject Progress Cards */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      {/* 1. At-a-Glance Progress Bar */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Subject Overview
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              All 15 KTU S7 modules with live leaf topic calculations
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">KTU B.Tech S7</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                2019 Scheme
+              </span>
+            </div>
+            <h1 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">
+              Syllabus Progress Tracker
+            </h1>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-black font-mono text-slate-900 dark:text-white">
+              {overallSummary.percentage}%
+            </span>
+            <p className="text-xs text-slate-500">
+              {overallSummary.completedLeafCount} of {overallSummary.totalLeafCount} topics done
             </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/subjects')}>
-            View all details <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {overallSummary.subjectSummaries.map((subject) => {
-            const nextItem = getContinueTopic(subject.subjectId);
+        <ProgressBar value={overallSummary.percentage} size="md" color="indigo" className="mb-4" />
 
+        {/* 3 Quick Subject Filter Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {overallSummary.subjectSummaries.map((s) => {
+            const isSelected = selectedSubject === s.subjectId;
             return (
-              <Card key={subject.subjectId} hoverEffect className="flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div>
-                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                        {subject.code}
-                      </span>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-                        {subject.name}
-                      </h3>
-                    </div>
-                    <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-                      {subject.percentage}%
-                    </span>
-                  </div>
-
-                  <ProgressBar value={subject.percentage} color={subject.color} size="md" className="mb-4" />
-
-                  {/* 5-Module Mini Breakdown */}
-                  <div className="space-y-1.5 mb-5">
-                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                      5-Module Progress
-                    </p>
-                    {subject.modules.map((m) => (
-                      <div
-                        key={m.moduleId}
-                        onClick={() => navigate(`/subjects/${subject.subjectId}/modules/${m.moduleId}`)}
-                        className="flex items-center justify-between text-xs py-1 px-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
-                      >
-                        <span className="truncate text-slate-600 dark:text-slate-400">
-                          M{m.moduleNumber}: {m.title.split(' ')[0]}...
-                        </span>
-                        <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
-                          {m.percentage}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              <button
+                key={s.subjectId}
+                onClick={() => setSelectedSubject(isSelected ? 'all' : s.subjectId)}
+                className={`p-3 rounded-lg border text-left transition-all ${
+                  isSelected
+                    ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-900 dark:ring-white'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-400 bg-white dark:bg-slate-900'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-xs text-slate-900 dark:text-white">{s.code}</span>
+                  <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {s.percentage}%
+                  </span>
                 </div>
-
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span>{subject.completedLeafCount} / {subject.totalLeafCount} topics done</span>
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                      {subject.totalLeafCount - subject.completedLeafCount} left
-                    </span>
-                  </div>
-
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="w-full justify-between"
-                    onClick={() => {
-                      if (nextItem) {
-                        navigate(`/subjects/${subject.subjectId}/modules/${nextItem.module.id}`);
-                      } else {
-                        navigate(`/subjects/${subject.subjectId}`);
-                      }
-                    }}
-                  >
-                    <span>{nextItem ? `Continue: M${nextItem.module.moduleNumber}` : 'Review Subject'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Button>
+                <p className="text-[11px] text-slate-500 truncate mb-1.5">{s.name}</p>
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>5 Modules</span>
+                  <span>{s.completedLeafCount}/{s.totalLeafCount}</span>
                 </div>
-              </Card>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* Grid: Exam Readiness Heuristic & Real-Time Friends Online */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Exam Readiness Indicator */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Brain className="w-4 h-4 text-indigo-500" />
-                Exam Readiness Indicator
-              </CardTitle>
-              <Badge variant="purple" size="sm">{readiness.label}</Badge>
-            </div>
-            <CardDescription>
-              Heuristic score based on syllabus coverage, high-priority topics, and revision depth.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <CircularProgress
-                value={readiness.score}
-                size={120}
-                strokeWidth={10}
-                color="#8b5cf6"
-                subtitle="Readiness Index"
-              />
-            </div>
+      {/* 2. Simple AI Study Insight */}
+      <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
+          <Sparkles className="w-4 h-4" />
+        </div>
+        <div className="flex-1 text-xs">
+          <span className="font-bold text-slate-900 dark:text-white block mb-0.5">
+            AI Exam Guidance • {aiInsight.title}
+          </span>
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+            {aiInsight.tip}
+          </p>
+        </div>
+      </div>
 
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Syllabus Coverage (45%)</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {readiness.breakdown.coverage}%
-                </span>
-              </div>
-              <ProgressBar value={readiness.breakdown.coverage} size="sm" color="indigo" />
+      {/* 3. Search & Filter Bar */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search topics, algorithms, or keywords (e.g. A*, ECG, AES, RSA)..."
+              className="w-full pl-9.5 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>High Priority Exam Topics (35%)</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {readiness.breakdown.highPriorityCoverage}%
-                </span>
-              </div>
-              <ProgressBar value={readiness.breakdown.highPriorityCoverage} size="sm" color="amber" />
+          {/* Quick Expand/Collapse */}
+          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+            <button
+              onClick={expandAll}
+              className="px-2.5 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-800 transition-colors"
+            >
+              Expand All
+            </button>
+            <button
+              onClick={collapseAll}
+              className="px-2.5 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-800 transition-colors"
+            >
+              Collapse
+            </button>
+          </div>
+        </div>
 
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Revision & Confidence (20%)</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {readiness.breakdown.revisionScore}%
-                </span>
-              </div>
-              <ProgressBar value={readiness.breakdown.revisionScore} size="sm" color="emerald" />
-            </div>
+        {/* Filter Pills */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+          {/* Subject Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {[
+              { id: 'all', label: 'All 3 Subjects (15 Modules)' },
+              { id: 'sub-cst401-ai', label: 'CST401 AI' },
+              { id: 'sub-ect425-bmi', label: 'ECT425 BMI' },
+              { id: 'sub-cst433-sic', label: 'CST433 SIC' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedSubject(tab.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  selectedSubject === tab.id
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60 flex items-start gap-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-tight">
-                <strong>Planning Heuristic:</strong> This score estimates study preparedness based on completed topics and revision records. It is not an official prediction of KTU examination marks.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Status Pills */}
+          <div className="flex items-center gap-1.5">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'pending', label: 'Pending' },
+              { id: 'completed', label: 'Completed' },
+              { id: 'high_priority', label: '🔥 High Priority' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFilterStatus(f.id as any)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  filterStatus === f.id
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-        {/* Real-time Friends Progress Live */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Users className="w-4 h-4 text-emerald-500" />
-                Friends Live Progress
-              </CardTitle>
-              <Button variant="outline" size="sm" onClick={() => navigate('/friends')}>
-                Manage Friends
-              </Button>
-            </div>
-            <CardDescription>
-              Real-time synchronization across devices and tabs without refreshing.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {friendsProgress.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 text-xs">
-                No friends connected yet. Search classmates or share your invitation link!
-              </div>
-            ) : (
-              friendsProgress.map(({ friend, progress }) => {
-                const aiPct = progress.subjectSummaries.find((s) => s.code === 'CST401')?.percentage || 0;
-                const bmiPct = progress.subjectSummaries.find((s) => s.code === 'ECT425')?.percentage || 0;
-                const sicPct = progress.subjectSummaries.find((s) => s.code === 'CST433')?.percentage || 0;
+      {/* 4. Complete Syllabus Checklist (All 15 Modules Inline) */}
+      <div className="space-y-4">
+        {filteredSubjects.map((subject) => {
+          const subjectSummary = overallSummary.subjectSummaries.find((s) => s.subjectId === subject.id);
+
+          return (
+            <div key={subject.id} className="space-y-3">
+              {/* Subject Group Title (when showing all) */}
+              {selectedSubject === 'all' && (
+                <div className="flex items-center justify-between pt-3 pb-1 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">
+                      {subject.code} — {subject.name}
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono">({subject.credits || 4} Credits • {subject.lectureHours} hrs)</span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                    {subjectSummary?.percentage || 0}%
+                  </span>
+                </div>
+              )}
+
+              {/* Modules Accordion */}
+              {subject.modules.map((mod) => {
+                const modSummary = subjectSummary?.modules.find((m) => m.moduleId === mod.id);
+                const isExpanded = Boolean(expandedModules[mod.id]);
+                const totalModLeaves = modSummary?.totalLeafCount || 0;
+                const completedModLeaves = modSummary?.completedLeafCount || 0;
+                const modPercentage = modSummary?.percentage || 0;
 
                 return (
                   <div
-                    key={friend.id}
-                    onClick={() => navigate(`/friends/${friend.id}`)}
-                    className="p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/60 dark:hover:bg-slate-800/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    key={mod.id}
+                    className="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs"
                   >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={friend.avatarUrl}
-                        alt={friend.displayName}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500/30"
-                      />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-bold text-slate-900 dark:text-white">
-                            {friend.displayName}
+                    {/* Module Accordion Header */}
+                    <div
+                      onClick={() => toggleModule(mod.id)}
+                      className="p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+                          M{mod.moduleNumber}
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {mod.title}
+                          </h3>
+                          <span className="text-[11px] text-slate-400">
+                            {mod.lectureHours} Lecture Hours • {completedModLeaves}/{totalModLeaves} completed
                           </span>
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" title="Online" />
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">@{friend.username} • {friend.collegeName?.split(',')[0]}</p>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right hidden sm:block">
+                          <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                            {modPercentage}%
+                          </span>
+                          <div className="w-16 mt-0.5">
+                            <ProgressBar value={modPercentage} size="sm" color="indigo" />
+                          </div>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-slate-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs font-mono font-medium">
-                      <div className="text-center">
-                        <span className="text-[10px] text-slate-400 block font-sans">AI</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-bold">{aiPct}%</span>
+                    {/* Module Topics Checklist */}
+                    {isExpanded && (
+                      <div className="border-t border-slate-100 dark:border-slate-800/80 p-3.5 space-y-2 bg-slate-50/40 dark:bg-slate-950/20">
+                        {mod.topics.length === 0 ? (
+                          <p className="text-xs text-slate-400 py-2 text-center">
+                            No topics matching the current filter.
+                          </p>
+                        ) : (
+                          mod.topics.map((topic) => {
+                            const hasSub = topic.subtopics && topic.subtopics.length > 0;
+                            const parentStatus = hasSub ? getParentTopicStatus(topic as unknown as Topic) : null;
+                            const isTopicChecked = !hasSub ? isTopicCompleted(topic.id) : parentStatus === 'completed';
+
+                            return (
+                              <div
+                                key={topic.id}
+                                className="p-2.5 rounded-lg border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors"
+                              >
+                                {/* Main Topic Row */}
+                                <div className="flex items-start gap-2.5">
+                                  {/* Checkbox */}
+                                  <button
+                                    onClick={() => {
+                                      if (!hasSub) {
+                                        toggleTopic(topic.id, isTopicCompleted(topic.id));
+                                      } else {
+                                        const shouldCheck = parentStatus !== 'completed';
+                                        topic.subtopics?.forEach((st) => {
+                                          if (isTopicCompleted(st.id) !== shouldCheck) {
+                                            toggleTopic(st.id, !shouldCheck);
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600 transition-colors"
+                                  >
+                                    {hasSub ? (
+                                      parentStatus === 'completed' ? (
+                                        <CheckSquare className="w-4 h-4 text-emerald-600" />
+                                      ) : parentStatus === 'partial' ? (
+                                        <div className="w-4 h-4 rounded border-2 border-indigo-500 bg-indigo-500/20 flex items-center justify-center">
+                                          <div className="w-2 h-0.5 bg-indigo-600" />
+                                        </div>
+                                      ) : (
+                                        <Square className="w-4 h-4" />
+                                      )
+                                    ) : isTopicCompleted(topic.id) ? (
+                                      <CheckSquare className="w-4 h-4 text-emerald-600" />
+                                    ) : (
+                                      <Square className="w-4 h-4" />
+                                    )}
+                                  </button>
+
+                                  {/* Topic Title & Badges */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span
+                                        className={`text-xs font-semibold ${
+                                          isTopicChecked
+                                            ? 'line-through text-slate-400 dark:text-slate-500'
+                                            : 'text-slate-900 dark:text-slate-100'
+                                        }`}
+                                      >
+                                        {topic.title}
+                                      </span>
+                                      {topic.priority === 'VERY_HIGH' && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                                          Very High Priority
+                                        </span>
+                                      )}
+                                      {topic.priority === 'HIGH' && (
+                                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                                          High Priority
+                                        </span>
+                                      )}
+                                      {(topic as any).estimatedHours && (
+                                        <span className="text-[10px] text-slate-400">
+                                          {(topic as any).estimatedHours} hrs
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {topic.description && (
+                                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                        {topic.description}
+                                      </p>
+                                    )}
+
+                                    {/* Subtopics Checklist */}
+                                    {hasSub && (
+                                      <div className="mt-2.5 pl-3 border-l-2 border-slate-100 dark:border-slate-800 space-y-1.5">
+                                        {topic.subtopics?.map((st) => {
+                                          const isSubDone = isTopicCompleted(st.id);
+                                          return (
+                                            <div
+                                              key={st.id}
+                                              onClick={() => toggleTopic(st.id, isSubDone)}
+                                              className="flex items-center gap-2 py-0.5 cursor-pointer select-none group"
+                                            >
+                                              <button className="shrink-0 text-slate-400 group-hover:text-indigo-600 transition-colors">
+                                                {isSubDone ? (
+                                                  <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
+                                                ) : (
+                                                  <Square className="w-3.5 h-3.5" />
+                                                )}
+                                              </button>
+                                              <span
+                                                className={`text-[11px] ${
+                                                  isSubDone
+                                                    ? 'line-through text-slate-400 dark:text-slate-500'
+                                                    : 'text-slate-700 dark:text-slate-300'
+                                                }`}
+                                              >
+                                                {st.title}
+                                              </span>
+                                              {st.priority === 'VERY_HIGH' && (
+                                                <span className="text-[9px] font-bold text-rose-500">
+                                                  [Important]
+                                                </span>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
-                      <div className="text-center">
-                        <span className="text-[10px] text-slate-400 block font-sans">BMI</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">{bmiPct}%</span>
-                      </div>
-                      <div className="text-center">
-                        <span className="text-[10px] text-slate-400 block font-sans">SIC</span>
-                        <span className="text-violet-600 dark:text-violet-400 font-bold">{sicPct}%</span>
-                      </div>
-                      <div className="text-center pl-2 border-l border-slate-200 dark:border-slate-700">
-                        <span className="text-[10px] text-slate-400 block font-sans">Total</span>
-                        <span className="text-slate-900 dark:text-white font-bold">{progress.percentage}%</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 );
-              })
-            )}
-          </CardContent>
-        </Card>
+              })}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Today's Tasks & High-Yield PYQ Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Today's Study Tasks */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="w-4 h-4 text-indigo-500" />
-                Today's Focus & Study Tasks
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setTaskModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-1" /> Add Task
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2.5">
-            {tasks.length === 0 ? (
-              <p className="text-xs text-slate-500 py-4 text-center">
-                No active tasks scheduled for today. Click 'Add Task' to plan your revision!
-              </p>
-            ) : (
-              tasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-start justify-between gap-3 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900"
-                >
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <button
-                      onClick={async () => {
-                        await api.planner.toggleTask(task.id, true);
-                      }}
-                      className="mt-0.5 w-4 h-4 rounded border border-slate-300 dark:border-slate-600 hover:border-emerald-500 shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {task.title}
-                      </p>
-                      {task.notes && (
-                        <p className="text-[11px] text-slate-500 truncate">{task.notes}</p>
-                      )}
-                    </div>
-                  </div>
-                  <Badge variant={task.priority === 'urgent' ? 'danger' : 'warning'} size="sm">
-                    {task.priority}
-                  </Badge>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        {/* High-Yield PYQ Question Highlights */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Flame className="w-4 h-4 text-amber-500" />
-                Frequently Repeated PYQs
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/pyq')}>
-                View all PYQs <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-            <CardDescription>
-              Verified questions that appeared multiple times across KTU S7 examinations.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              {
-                title: 'A* Search Algorithm optimality & admissible heuristic proof',
-                subject: 'AI • CST401',
-                repeat: '3 Times (Dec 22, Dec 23, Jan 24)',
-                type: 'ALGORITHM • 14 Marks',
-              },
-              {
-                title: 'ECG Machine Block Diagram with Driven Right Leg (DRL)',
-                subject: 'BMI • ECT425',
-                repeat: '2 Times (May 23, Dec 23)',
-                type: 'DIAGRAM • 14 Marks',
-              },
-              {
-                title: 'AES Round Stages (SubBytes, ShiftRows, MixColumns, AddRoundKey)',
-                subject: 'SIC • CST433',
-                repeat: '3 Times (Dec 22, Dec 23, Jan 24)',
-                type: 'ALGORITHM • 14 Marks',
-              },
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                onClick={() => navigate('/pyq')}
-                className="p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.subject}</span>
-                  <Badge variant="warning" size="sm">{item.repeat}</Badge>
-                </div>
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
-                  {item.title}
-                </p>
-                <span className="text-[10px] text-slate-500 block mt-1">{item.type}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modal: Add Task */}
-      <Modal
-        isOpen={taskModalOpen}
-        onClose={() => setTaskModalOpen(false)}
-        title="Create Study Task"
-        description="Add a task to your daily/weekly planner. Tasks remain separate from official syllabus completion."
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Task Description
-            </label>
-            <input
-              type="text"
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              placeholder="e.g. Practice Hill Cipher matrix inversion problem"
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+      {/* 5. Frequently Repeated PYQs (At-a-Glance) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-amber-500" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+              Essential KTU S7 University Questions (Part B • 14 Marks)
+            </h2>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Subject
-              </label>
-              <select
-                value={taskSubject}
-                onChange={(e) => setTaskSubject(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="sub-cst401-ai">CST401 — AI</option>
-                <option value="sub-ect425-bmi">ECT425 — BMI</option>
-                <option value="sub-cst433-sic">CST433 — SIC</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Target Date
-              </label>
-              <input
-                type="date"
-                value={taskDate}
-                onChange={(e) => setTaskDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setTaskModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleCreateTask}>
-              Create Task
-            </Button>
-          </div>
+          <button
+            onClick={() => navigate('/pyq')}
+            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
+          >
+            View Complete PYQ Bank <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
-      </Modal>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          {topRepeatedPYQs.map((q, idx) => (
+            <div
+              key={idx}
+              onClick={() => navigate('/pyq')}
+              className="p-3 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 cursor-pointer transition-colors"
+            >
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <span className="font-bold text-slate-700 dark:text-slate-300">{q.subject}</span>
+                <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono text-[10px]">
+                  {q.repeat}
+                </span>
+              </div>
+              <p className="font-medium text-slate-900 dark:text-slate-100 leading-snug">
+                {q.title}
+              </p>
+              <span className="text-[10px] text-slate-400 mt-1 block">{q.marks}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
