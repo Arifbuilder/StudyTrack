@@ -41,6 +41,7 @@ const STORAGE_KEYS = {
   PYQ_QUESTIONS: 'syllabussync_pyq_questions',
   ACTIVITY_EVENTS: 'syllabussync_activity_events',
   CURRENT_USER_ID: 'syllabussync_current_user_id',
+  AUTHENTICATED_USER_ID: 'syllabussync_authenticated_user_id',
 };
 
 // Realtime BroadcastChannel for instantaneous multi-tab / multi-user sync
@@ -120,6 +121,7 @@ export function initializeLocalDatabase(): void {
       studyGoal: 'Maintain university examination standards & syllabus updates',
       role: 'super_admin',
       createdAt: '2024-01-01T00:00:00Z',
+      passwordHash: '116348079e2743411793526261f5aea8e9da7ced5535356ddf44a91b9b9d5eb5', // default: admin123
     },
   ];
 
@@ -393,6 +395,18 @@ export const localDb = {
     broadcastEvent({ type: 'PROGRESS_UPDATED', userId: id, timestamp: Date.now() });
   },
 
+  getAuthenticatedUserId(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.AUTHENTICATED_USER_ID);
+  },
+
+  setAuthenticatedUserId(id: string | null): void {
+    if (id) {
+      localStorage.setItem(STORAGE_KEYS.AUTHENTICATED_USER_ID, id);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.AUTHENTICATED_USER_ID);
+    }
+  },
+
   getCurrentUser(): UserProfile | null {
     const userId = this.getCurrentUserId();
     const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
@@ -414,7 +428,7 @@ export const localDb = {
     setTable(STORAGE_KEYS.PROFILES, profiles);
   },
 
-  registerUser(user: { email: string; username: string; displayName: string; role?: 'super_admin' | 'admin' | 'user' }): UserProfile {
+  registerUser(user: { email: string; username: string; displayName: string; role?: 'super_admin' | 'admin' | 'user'; passwordHash?: string }): UserProfile {
     const profiles = getTable<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
     
     // Check if username already exists
@@ -437,6 +451,7 @@ export const localDb = {
       studyGoal: 'Score high marks in KTU S7 exams',
       role: user.role || 'user',
       createdAt: new Date().toISOString(),
+      passwordHash: user.passwordHash,
     };
 
     profiles.push(newProfile);
@@ -454,8 +469,9 @@ export const localDb = {
     };
     setTable(STORAGE_KEYS.SETTINGS, settings);
 
-    // Switch to new user session
+    // Switch to new user session as authenticated
     this.setCurrentUserId(newProfile.id);
+    this.setAuthenticatedUserId(newProfile.id);
 
     // Audit log
     this.addAuditLog(newProfile.id, newProfile.username, 'USER_REGISTERED', 'USER', newProfile.id, { email: newProfile.email });

@@ -13,6 +13,7 @@ import {
   Copy,
   Sparkles,
   Award,
+  Eye,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -22,7 +23,7 @@ import { Modal } from '../components/ui/Modal';
 import { api } from '../services/api';
 
 export const FriendsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, viewUserProgress } = useAuth();
   const navigate = useNavigate();
 
   const [searchUsername, setSearchUsername] = useState('');
@@ -252,10 +253,22 @@ export const FriendsPage: React.FC = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1 text-xs"
+                    onClick={() => {
+                      viewUserProgress(friend.id);
+                      navigate('/dashboard');
+                    }}
+                  >
+                    <Eye className="w-3.5 h-3.5 mr-1 text-indigo-500" />
+                    <span>View Syllabus</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
                     onClick={() => navigate(`/friends/${friend.id}`)}
                   >
-                    <span>Compare Study Progress</span>
-                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    <span>Compare</span>
+                    <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
                 </div>
               </Card>

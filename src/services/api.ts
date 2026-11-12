@@ -4,6 +4,7 @@
 
 import { isSupabaseConfigured, supabase } from './supabase';
 import { localDb, calculateUserProgress, calculateExamReadiness } from './localDatabase';
+import { hashPassword, verifyPasswordHash } from './crypto';
 import rawSyllabus from '../data/officialSyllabus.json';
 import {
   UserProfile,
@@ -47,55 +48,89 @@ export const api = {
       return localDb.getCurrentUser();
     },
 
-    async signIn(usernameOrEmail: string, _password?: string): Promise<UserProfile> {
-      if (isSupabaseConfigured && supabase && _password) {
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: usernameOrEmail,
-            password: _password,
-          });
-          if (!error && data?.user) {
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-            if (profile) return profile as UserProfile;
-          }
-        } catch (e) {
-          console.warn('[Supabase Sign In Fallback]', e);
-        }
-      }
-
-      const allUsers = localDb.getAllUsers();
-      const user = allUsers.find(
+    async signIn(usernameOrEmail: string, password?: string): Promise<UserProfile> {
+      let user = localDb.getAllUsers().find(
         (u) =>
           u.id === usernameOrEmail ||
           u.username.toLowerCase() === usernameOrEmail.toLowerCase() ||
           u.email.toLowerCase() === usernameOrEmail.toLowerCase()
       );
+
+      if (!user && isSupabaseConfigured && supabase) {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .or(`username.ilike.${usernameOrEmail},email.ilike.${usernameOrEmail},id.eq.${usernameOrEmail}`)
+            .limit(1)
+            .single();
+          if (data) {
+            user = {
+              id: data.id,
+              email: data.email || '',
+              username: data.username,
+              displayName: data.display_name,
+              avatarUrl: data.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${data.username}`,
+              bio: data.bio,
+              university: data.university,
+              semester: data.semester,
+              collegeName: data.college_name,
+              studyGoal: data.study_goal,
+              role: data.role || 'user',
+              createdAt: data.created_at,
+              passwordHash: data.password_hash,
+            };
+            localDb.syncProfileFromCloud(user);
+          }
+        } catch (e) {}
+      }
+
       if (!user) {
         throw new Error(`Account '${usernameOrEmail}' not found. Please register or select an account.`);
       }
+
+      // Password verification
+      if (user.passwordHash) {
+        if (!password) {
+          throw new Error('This account requires a password to edit. Please enter your password.');
+        }
+        const isValid = await verifyPasswordHash(password, user.passwordHash);
+        if (!isValid) {
+          throw new Error('Incorrect password. Please try again.');
+        }
+      }
+
       localDb.setCurrentUserId(user.id);
+      localDb.setAuthenticatedUserId(user.id);
       return user;
     },
 
     async register(data: { email: string; username: string; displayName: string; password?: string; role?: 'super_admin' | 'admin' | 'user' }): Promise<UserProfile> {
-      const localUser = localDb.registerUser(data);
+      let passwordHash: string | undefined;
+      if (data.password) {
+        passwordHash = await hashPassword(data.password);
+      }
+
+      const localUser = localDb.registerUser({
+        ...data,
+        passwordHash,
+      });
 
       if (isSupabaseConfigured && supabase) {
         try {
           if (data.password) {
-            const { data: authData } = await supabase.auth.signUp({
-              email: data.email,
-              password: data.password,
-              options: {
-                data: {
-                  username: data.username,
-                  display_name: data.displayName,
+            try {
+              await supabase.auth.signUp({
+                email: data.email,
+                password: data.password,
+                options: {
+                  data: {
+                    username: data.username,
+                    display_name: data.displayName,
+                  },
                 },
-              },
-            });
-            if (authData?.user) {
-              localUser.id = authData.user.id;
-            }
+              });
+            } catch (e) {}
           }
 
           // Always upsert to public.profiles table so all devices see this student
@@ -110,6 +145,7 @@ export const api = {
             college_name: localUser.collegeName,
             study_goal: localUser.studyGoal,
             role: localUser.role,
+            password_hash: passwordHash,
             created_at: localUser.createdAt,
             updated_at: new Date().toISOString(),
           });
@@ -121,6 +157,27 @@ export const api = {
       return localUser;
     },
 
+    async verifyUserPassword(userId: string, passwordAttempt: string): Promise<boolean> {
+      const user = localDb.getAllUsers().find((u) => u.id === userId);
+      if (!user) return false;
+      if (!user.passwordHash) {
+        // Legacy account: set this as password
+        const newHash = await hashPassword(passwordAttempt);
+        user.passwordHash = newHash;
+        localDb.syncProfileFromCloud(user);
+        localDb.setAuthenticatedUserId(userId);
+        if (isSupabaseConfigured && supabase) {
+          supabase.from('profiles').update({ password_hash: newHash }).eq('id', userId);
+        }
+        return true;
+      }
+      const isValid = await verifyPasswordHash(passwordAttempt, user.passwordHash);
+      if (isValid) {
+        localDb.setAuthenticatedUserId(userId);
+      }
+      return isValid;
+    },
+
     async signOut(): Promise<void> {
       if (isSupabaseConfigured && supabase) {
         try {
@@ -129,7 +186,7 @@ export const api = {
           console.warn('[Supabase SignOut Fallback]', e);
         }
       }
-      localDb.setCurrentUserId('usr-superadmin');
+      localDb.setAuthenticatedUserId(null);
     },
 
     async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
@@ -395,6 +452,7 @@ export const api = {
               studyGoal: d.study_goal,
               role: d.role || 'user',
               createdAt: d.created_at || new Date().toISOString(),
+              passwordHash: d.password_hash,
             }));
             mapped.forEach((u) => {
               try {

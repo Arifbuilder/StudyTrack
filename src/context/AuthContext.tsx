@@ -9,11 +9,16 @@ interface AuthContextType {
   settings: UserSettings | null;
   theme: 'light' | 'dark';
   loading: boolean;
+  isReadOnly: boolean;
+  canEdit: boolean;
+  authenticatedUserId: string | null;
   setTheme: (theme: 'light' | 'dark') => void;
   login: (usernameOrEmail: string, password?: string) => Promise<void>;
-  register: (data: { email: string; username: string; displayName: string; role?: UserRole }) => Promise<void>;
+  register: (data: { email: string; username: string; displayName: string; password?: string; role?: UserRole }) => Promise<void>;
   logout: () => Promise<void>;
   switchUser: (userId: string) => void;
+  viewUserProgress: (userId: string) => void;
+  unlockEditing: (password: string) => Promise<boolean>;
   refreshUser: () => void;
   allUsers: UserProfile[];
 }
@@ -26,11 +31,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [theme, setThemeState] = useState<'light' | 'dark'>('light');
   const [loading, setLoading] = useState(true);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [authenticatedUserId, setAuthUserIdState] = useState<string | null>(localDb.getAuthenticatedUserId());
+
+  // isReadOnly is true if you haven't entered the password for the active viewing user
+  const isReadOnly = !authenticatedUserId || authenticatedUserId !== user?.id;
+  const canEdit = !isReadOnly;
 
   const loadCurrentUser = useCallback(async () => {
     try {
       const u = await api.auth.getCurrentUser();
       setUser(u);
+      setAuthUserIdState(localDb.getAuthenticatedUserId());
       if (u) {
         const s = await api.auth.getSettings(u.id);
         setSettings(s);
@@ -110,15 +121,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (usernameOrEmail: string, password?: string) => {
     const loggedInUser = await api.auth.signIn(usernameOrEmail, password);
     setUser(loggedInUser);
+    setAuthUserIdState(loggedInUser.id);
+    localDb.setAuthenticatedUserId(loggedInUser.id);
     const s = await api.auth.getSettings(loggedInUser.id);
     setSettings(s);
     const users = await api.admin.getAllUsers();
     setAllUsers(users);
   };
 
-  const register = async (data: { email: string; username: string; displayName: string; role?: UserRole }) => {
+  const register = async (data: { email: string; username: string; displayName: string; password?: string; role?: UserRole }) => {
     const newUser = await api.auth.register(data);
     setUser(newUser);
+    setAuthUserIdState(newUser.id);
+    localDb.setAuthenticatedUserId(newUser.id);
     const s = await api.auth.getSettings(newUser.id);
     setSettings(s);
     const users = await api.admin.getAllUsers();
@@ -127,16 +142,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await api.auth.signOut();
+    setAuthUserIdState(null);
+    localDb.setAuthenticatedUserId(null);
     await loadCurrentUser();
   };
 
-  const switchUser = (userId: string) => {
+  const viewUserProgress = (userId: string) => {
     const found = allUsers.find((u) => u.id === userId) || localDb.getAllUsers().find((u) => u.id === userId);
     if (found) {
       setUser(found);
     }
     localDb.setCurrentUserId(userId);
+    // Keep existing authenticatedUserId so if viewing someone else, it becomes read-only
     loadCurrentUser();
+  };
+
+  const switchUser = (userId: string) => {
+    viewUserProgress(userId);
+  };
+
+  const unlockEditing = async (password: string): Promise<boolean> => {
+    if (!user) return false;
+    const valid = await api.auth.verifyUserPassword(user.id, password);
+    if (valid) {
+      setAuthUserIdState(user.id);
+      localDb.setAuthenticatedUserId(user.id);
+      return true;
+    }
+    return false;
   };
 
   const refreshUser = () => {
@@ -150,11 +183,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         settings,
         theme,
         loading,
+        isReadOnly,
+        canEdit,
+        authenticatedUserId,
         setTheme,
         login,
         register,
         logout,
         switchUser,
+        viewUserProgress,
+        unlockEditing,
         refreshUser,
         allUsers,
       }}

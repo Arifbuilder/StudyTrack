@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useProgress } from '../../context/ProgressContext';
 import {
   BookOpen,
   Sun,
@@ -12,13 +13,17 @@ import {
   ShieldAlert,
   Settings,
   Sparkles,
+  Lock,
+  Eye,
+  ShieldCheck,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { getSupabaseConfig } from '../../services/supabase';
 import { SupabaseConfigModal } from '../database/SupabaseConfigModal';
 
 export const Navbar: React.FC = () => {
-  const { user, theme, setTheme, allUsers, switchUser, logout } = useAuth();
+  const { user, theme, setTheme, allUsers, switchUser, logout, isReadOnly } = useAuth();
+  const { setUnlockModalOpen } = useProgress();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [supabaseConfig, setSupabaseConfig] = useState(getSupabaseConfig());
@@ -125,19 +130,52 @@ export const Navbar: React.FC = () => {
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[80px] sm:max-w-[120px] truncate">
                 {user?.displayName?.split(' ')[0] || 'User'}
               </span>
+              {isReadOnly && (
+                <span className="hidden sm:inline-flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-semibold">
+                  <Eye className="w-2.5 h-2.5" /> View
+                </span>
+              )}
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {/* Dropdown Menu */}
             {userDropdownOpen && (
               <div
-                className="absolute right-0 mt-1.5 w-56 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg py-1.5 z-50 text-xs"
+                className="absolute right-0 mt-1.5 w-60 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg py-1.5 z-50 text-xs"
                 onClick={() => setUserDropdownOpen(false)}
               >
-                <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  <p className="font-semibold text-slate-900 dark:text-white truncate">{user?.displayName}</p>
+                <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <p className="font-semibold text-slate-900 dark:text-white truncate">{user?.displayName}</p>
+                    {isReadOnly ? (
+                      <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                        View-Only
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                        Owner
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-slate-400 truncate">@{user?.username}</p>
                 </div>
+
+                {isReadOnly && (
+                  <div className="p-2 bg-amber-50/60 dark:bg-amber-950/30 border-b border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setUserDropdownOpen(false);
+                        setUnlockModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors shadow-xs"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      Unlock Editing (Password)
+                    </button>
+                  </div>
+                )}
 
                 <div className="py-1">
                   <Link

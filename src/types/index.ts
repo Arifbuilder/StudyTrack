@@ -105,6 +105,7 @@ export interface UserProfile {
   studyGoal: string;
   role: UserRole;
   createdAt: string;
+  passwordHash?: string;
 }
 
 export interface UserSettings {

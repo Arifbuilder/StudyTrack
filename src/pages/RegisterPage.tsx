@@ -21,7 +21,14 @@ export const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!displayName.trim() || !username.trim() || !email.trim()) return;
+    if (!displayName.trim() || !username.trim() || !email.trim() || !password.trim()) {
+      setError('Please fill in all fields including a password.');
+      return;
+    }
+    if (password.trim().length < 4) {
+      setError('Password must be at least 4 characters long.');
+      return;
+    }
     setError('');
     setLoading(true);
 
@@ -30,6 +37,7 @@ export const RegisterPage: React.FC = () => {
         displayName: displayName.trim(),
         username: username.trim().toLowerCase().replace(/\s+/g, '_'),
         email: email.trim().toLowerCase(),
+        password: password.trim(),
         role: 'user',
       });
       navigate('/dashboard');
@@ -99,13 +107,21 @@ export const RegisterPage: React.FC = () => {
               />
 
               <Input
-                label="Password"
+                label="Account Password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Choose a password (min. 4 chars)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 icon={<Lock className="w-4 h-4" />}
+                required
               />
+
+              <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-400">
+                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <span>
+                  <strong>Account Security:</strong> Anyone can view your syllabus progress freely without a password, but only you can check or edit topics using your password.
+                </span>
+              </div>
 
               {error && <p className="text-xs text-rose-500 font-semibold">{error}</p>}
 

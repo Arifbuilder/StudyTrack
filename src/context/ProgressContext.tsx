@@ -5,6 +5,7 @@ import { localDb, realtimeChannel } from '../services/localDatabase';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { Topic, OverallProgressSummary, UserTopicProgress } from '../types';
 import confetti from 'canvas-confetti';
+import { UnlockPasswordModal } from '../components/auth/UnlockPasswordModal';
 
 interface ProgressContextType {
   completedTopicIds: Set<string>;
@@ -20,6 +21,10 @@ interface ProgressContextType {
     };
   };
   isLoading: boolean;
+  isReadOnly: boolean;
+  canEdit: boolean;
+  unlockModalOpen: boolean;
+  setUnlockModalOpen: (open: boolean) => void;
   toggleTopic: (topicId: string, currentCompletedState: boolean) => Promise<void>;
   updateRevision: (
     topicId: string,
@@ -38,7 +43,8 @@ interface ProgressContextType {
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
 
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isReadOnly, canEdit } = useAuth();
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const [completedTopicIds, setCompletedTopicIds] = useState<Set<string>>(new Set());
   const [progressMap, setProgressMap] = useState<Map<string, UserTopicProgress>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
@@ -150,6 +156,12 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Optimistic Topic Toggle with instant feedback & rollback safeguard
   const toggleTopic = async (topicId: string, currentCompletedState: boolean) => {
+    // SECURITY CHECK: If in view-only mode, prompt for password instead of toggling!
+    if (isReadOnly || !canEdit) {
+      setUnlockModalOpen(true);
+      return;
+    }
+
     const activeUserId = user?.id || localDb.getCurrentUserId();
     if (!activeUserId) return;
 
@@ -216,6 +228,12 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       notes?: string;
     }
   ) => {
+    // SECURITY CHECK: If in view-only mode, prompt for password!
+    if (isReadOnly || !canEdit) {
+      setUnlockModalOpen(true);
+      return;
+    }
+
     const activeUserId = user?.id || localDb.getCurrentUserId();
     if (!activeUserId) return;
     try {
@@ -270,6 +288,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         overallSummary,
         readiness,
         isLoading,
+        isReadOnly,
+        canEdit,
+        unlockModalOpen,
+        setUnlockModalOpen,
         toggleTopic,
         updateRevision,
         isTopicCompleted,
@@ -278,6 +300,13 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }}
     >
       {children}
+      <UnlockPasswordModal
+        isOpen={unlockModalOpen}
+        onClose={() => setUnlockModalOpen(false)}
+        onSuccess={() => {
+          loadProgress();
+        }}
+      />
     </ProgressContext.Provider>
   );
 };

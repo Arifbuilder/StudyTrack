@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { localDb, initializeLocalDatabase, calculateUserProgress } from '../src/services/localDatabase';
 import { api } from '../src/services/api';
+import { hashPassword, verifyPasswordHash } from '../src/services/crypto';
 import officialSyllabus from '../src/data/officialSyllabus.json';
 
 // In-memory mock for localStorage in Node environment
@@ -190,5 +191,82 @@ describe('SyllabusSync Acceptance & Scenario Verification', () => {
       expect(s.percentage).toBe(0);
       expect(s.completedLeafCount).toBe(0);
     });
+  });
+
+  it('Scenario 15: Password hashing & verification securely validates credentials', async () => {
+    const rawPass = 'studentSecret123';
+    const hash = await hashPassword(rawPass);
+
+    expect(hash).toHaveLength(64); // 256-bit hex hash
+
+    const isMatch = await verifyPasswordHash(rawPass, hash);
+    expect(isMatch).toBe(true);
+
+    const isWrongMatch = await verifyPasswordHash('wrongPassword', hash);
+    expect(isWrongMatch).toBe(false);
+  });
+
+  it('Scenario 16: User registration with password protects account from unauthorized edits', async () => {
+    const rawPass = 'myKtupass2026';
+    const user = await api.auth.register({
+      email: 'secure@ktu.edu',
+      username: 'secure_student',
+      displayName: 'Secure Student',
+      password: rawPass,
+      role: 'user',
+    });
+
+    expect(user.passwordHash).toBeDefined();
+    expect(user.passwordHash).not.toBe(rawPass);
+
+    // Login with correct password succeeds
+    const loggedIn = await api.auth.signIn('secure_student', rawPass);
+    expect(loggedIn.id).toBe(user.id);
+
+    // Login with wrong password is automatically rejected
+    await expect(api.auth.signIn('secure_student', 'wrong_pass')).rejects.toThrow(
+      'Incorrect password'
+    );
+  });
+
+  it('Scenario 17: Password verification verifies account ownership for unlocking editing', async () => {
+    const rawPass = 'unlockMe456';
+    const user = await api.auth.register({
+      email: 'unlock@ktu.edu',
+      username: 'unlock_student',
+      displayName: 'Unlock Student',
+      password: rawPass,
+      role: 'user',
+    });
+
+    const isCorrect = await api.auth.verifyUserPassword(user.id, rawPass);
+    expect(isCorrect).toBe(true);
+
+    const isIncorrect = await api.auth.verifyUserPassword(user.id, 'incorrectPassword');
+    expect(isIncorrect).toBe(false);
+  });
+
+  it('Scenario 18: View-only access allows reading syllabus without requiring a password', async () => {
+    const student = await api.auth.register({
+      email: 'viewable@ktu.edu',
+      username: 'viewable_student',
+      displayName: 'Viewable Student',
+      password: 'privatePassword123',
+      role: 'user',
+    });
+
+    // Mark 1 leaf topic as completed by the student
+    const topicId = 'cst401-m1-t1'; // Introduction to Artificial Intelligence (leaf topic)
+    await api.progress.toggleTopic(student.id, topicId, true);
+
+    // Any visitor or peer can read their progress summary freely without providing a password
+    const summary = await api.progress.getUserProgress(student.id);
+    expect(summary.length).toBeGreaterThanOrEqual(1);
+    const found = summary.find((s) => s.topicId === topicId);
+    expect(found).toBeDefined();
+    expect(found?.isCompleted).toBe(true);
+
+    const calculated = calculateUserProgress(student.id);
+    expect(calculated.completedLeafCount).toBe(1);
   });
 });

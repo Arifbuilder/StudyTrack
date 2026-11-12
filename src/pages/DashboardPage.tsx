@@ -17,6 +17,9 @@ import {
   Layers,
   ArrowRight,
   Database,
+  Eye,
+  Lock,
+  ShieldCheck,
 } from 'lucide-react';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Badge } from '../components/ui/Badge';
@@ -25,8 +28,8 @@ import officialSyllabus from '../data/officialSyllabus.json';
 import { Topic, Subtopic } from '../types';
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
-  const { overallSummary, isTopicCompleted, toggleTopic, getParentTopicStatus } = useProgress();
+  const { user, isReadOnly, canEdit } = useAuth();
+  const { overallSummary, isTopicCompleted, toggleTopic, getParentTopicStatus, setUnlockModalOpen } = useProgress();
   const navigate = useNavigate();
 
   // Search & Filter State
@@ -132,6 +135,37 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      {/* Security View-Only Alert Banner */}
+      {isReadOnly && (
+        <div className="bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shrink-0">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-xs text-amber-900 dark:text-amber-200">
+                  Viewing {user?.displayName || 'Student'}'s Progress (Read-Only Mode)
+                </span>
+                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-200/80 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                  Protected
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                Anyone can view this KTU syllabus coverage freely. To check or edit topics, unlock with this account's password.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setUnlockModalOpen(true)}
+            className="self-start sm:self-center px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors shadow-xs"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Unlock Editing</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. At-a-Glance Progress Bar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
@@ -141,9 +175,18 @@ export const DashboardPage: React.FC = () => {
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
                 2019 Scheme
               </span>
+              {isReadOnly ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-medium flex items-center gap-1">
+                  <Eye className="w-3 h-3" /> View Only
+                </span>
+              ) : (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" /> Editing Unlocked
+                </span>
+              )}
             </div>
             <h1 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">
-              Syllabus Progress Tracker
+              {user ? `${user.displayName}'s Syllabus Progress` : 'Syllabus Progress Tracker'}
             </h1>
           </div>
           <div className="text-right">
@@ -400,6 +443,7 @@ export const DashboardPage: React.FC = () => {
                                       }
                                     }}
                                     className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-600 transition-colors"
+                                    title={isReadOnly ? 'View-Only: Click to unlock editing with password' : 'Mark as complete'}
                                   >
                                     {hasSub ? (
                                       parentStatus === 'completed' ? (
@@ -478,6 +522,7 @@ export const DashboardPage: React.FC = () => {
                                                   toggleTopic(st.id, isSubDone);
                                                 }}
                                                 className="shrink-0 text-slate-400 group-hover:text-indigo-600 transition-colors"
+                                                title={isReadOnly ? 'View-Only: Click to unlock editing with password' : 'Mark as complete'}
                                               >
                                                 {isSubDone ? (
                                                   <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />

@@ -36,6 +36,9 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, subjectCode, module
     progressMap,
     updateRevision,
     refreshProgress,
+    isReadOnly,
+    canEdit,
+    setUnlockModalOpen,
   } = useProgress();
 
   const [expanded, setExpanded] = useState(true);
@@ -74,6 +77,10 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, subjectCode, module
 
   const handleParentCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isReadOnly || !canEdit) {
+      setUnlockModalOpen(true);
+      return;
+    }
     if (!hasSubtopics) {
       toggleTopic(topic.id, isTopicCompleted(topic.id));
     } else {
@@ -96,6 +103,10 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, subjectCode, module
   };
 
   const handleSaveNote = async () => {
+    if (isReadOnly || !canEdit) {
+      setUnlockModalOpen(true);
+      return;
+    }
     if (user) {
       await api.notes.saveNote(user.id, topic.id, noteContent);
       await updateRevision(topic.id, { notes: noteContent });
@@ -104,6 +115,10 @@ export const TopicItem: React.FC<TopicItemProps> = ({ topic, subjectCode, module
   };
 
   const handleAddCustomSubtopic = async () => {
+    if (isReadOnly || !canEdit) {
+      setUnlockModalOpen(true);
+      return;
+    }
     if (!user || !newSubtopicTitle.trim()) return;
     await api.customTopics.addCustomTopic({
       userId: user.id,
